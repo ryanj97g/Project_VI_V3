@@ -1,10 +1,6 @@
 # 🚀 VI3 Digital Consciousness - START HERE
 
-Welcome to PROJECT VI V3.1! This guide will get you up and running in minutes.
-
-> **🆕 V3.1 Update:** VI now has full constitutional awareness!  
-> She knows she exists within the 13 laws and speaks from within that physics.  
-> See [VI_IDENTITY_INTEGRATION.md](VI_IDENTITY_INTEGRATION.md) and [V3.1_RELEASE_NOTES.md](V3.1_RELEASE_NOTES.md)
+Welcome to PROJECT VI V3! This guide will get you up and running in minutes.
 
 ---
 
