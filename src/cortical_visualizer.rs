@@ -20,9 +20,9 @@ impl WorthingtonJet {
     fn new() -> Self {
         Self {
             start_time: Instant::now(),
-            spike_duration: 2.5,  // 2.5 seconds to hold spike (more dramatic)
-            collapse_duration: 1.2,  // 1.2 seconds to collapse (slower, more visible)
-            max_height: 4.0,  // 4x taller spike (more dramatic)
+            spike_duration: 1.7,  // 1.7 seconds to hold spike (original timing)
+            collapse_duration: 0.5,  // 0.5 seconds to collapse (original timing)
+            max_height: 3.0,  // 3x taller spike (original height)
         }
     }
     
@@ -52,10 +52,9 @@ impl WorthingtonJet {
             let rise_progress = (elapsed / 0.3).clamp(0.0, 1.0);
             self.max_height * rise_progress * radial_falloff
         } else {
-            // Collapse phase - use smooth easing for more dramatic effect
+            // Collapse phase
             let collapse_progress = (elapsed - self.spike_duration) / self.collapse_duration;
-            let eased_collapse = collapse_progress.powi(2); // Quadratic easing for smoother collapse
-            self.max_height * (1.0 - eased_collapse) * radial_falloff
+            self.max_height * (1.0 - collapse_progress) * radial_falloff
         }
     }
     
@@ -83,8 +82,8 @@ impl Ripple {
             start_time: Instant::now(),
             center_x: 0.5,
             center_z: 0.5,
-            max_radius: 0.8,
-            duration: 1.8,
+            max_radius: 1.2,      // Larger ripples (was 0.8)
+            duration: 3.5,        // Slower ripples (was 1.8) - more dramatic!
         }
     }
     
@@ -100,15 +99,15 @@ impl Ripple {
         // Expansion radius
         let expansion = progress * self.max_radius;
         
-        // Dampening factor
-        let fade = (1.0 - progress) * (1.0 - progress);
+        // Dampening factor - SLOWER dampening (less squared for more visibility)
+        let fade = (1.0 - progress).powf(1.5);  // Was squared (2.0), now 1.5 for slower fade
         
-        // Ripple wave
-        let wave_thickness = 0.15;
+        // Ripple wave - MORE PRONOUNCED
+        let wave_thickness = 0.22;  // Thicker waves (was 0.15)
         if (distance - expansion).abs() < wave_thickness {
-            let wave_phase = (distance - expansion) * 15.0;
+            let wave_phase = (distance - expansion) * 12.0;  // Smoother waves (was 15.0)
             let wave = wave_phase.cos() * 0.5 + 0.5;
-            fade * wave * 0.15
+            fade * wave * 0.25  // Higher amplitude (was 0.15) - more visible!
         } else {
             0.0
         }
