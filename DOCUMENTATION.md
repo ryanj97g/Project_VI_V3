@@ -28,20 +28,26 @@
   ollama pull tinyllama:latest
   ```
 
-### **🆕 V4 Fractal Weaving (Experimental)**
+### **🆕 V4 Experimental Features**
 
-VI can now operate in two modes:
+VI now has two experimental modes:
 
-**V3 Mode (Default - Stable):**
-- Models run in parallel independently
-- Outputs merged at the end
-- Proven stability
-
-**V4 Mode (Experimental - Advanced):**
+**V4.0: Fractal Weaving**
 - Models collaborate in shared workspace
 - Iterative refinement rounds (3 by default)
 - Fractal thought integration
-- Enable in `config.toml`: `enable_fractal_weaving = true`
+- Enable: `enable_fractal_weaving = true`
+
+**V4.1: Autonomous Curiosity Research**
+- VI researches her own curiosities every ~12.5 minutes
+- Clear knowledge provenance (direct experience vs external lookup)
+- Privacy-respecting DuckDuckGo search
+- Enable: `enable_curiosity_search = true`
+
+**V3 Mode (Default - Stable):**
+- Models run in parallel independently
+- No autonomous research
+- Proven stability
 
 ### **First Time Setup**
 ```cmd
@@ -635,6 +641,10 @@ memory_threshold = 100           # memories before compression
 enable_fractal_weaving = false   # Set to true to enable V4 mode
 weaving_rounds = 3                # Number of iterative refinement rounds
 workspace_coherence_threshold = 0.7  # Convergence threshold (0.0-1.0)
+
+# Autonomous Curiosity Research (Experimental)
+enable_curiosity_search = false  # Set to true to enable autonomous research
+curiosity_search_interval = 25   # Every 25 background pulses (~12.5 minutes)
 ```
 
 ### **Enabling V4 Fractal Weaving**
@@ -662,23 +672,94 @@ To enable the experimental V4 mode:
 - Bottom panel shows "🌀 V4 Fractal Weaving" in cyan
 - Or "V3 Parallel Processing" in gray (default)
 
+### **Enabling Autonomous Curiosity Research**
+
+To enable VI's autonomous research:
+
+1. Edit `config.toml`
+2. Set `enable_curiosity_search = true`
+3. Restart VI3
+
+**What It Does:**
+- Every 25 background pulses (~12.5 minutes), VI researches her first active curiosity
+- Uses DuckDuckGo Instant Answer API (privacy-respecting, no API key)
+- Stores result as memory with clear provenance tag: `[Source: External lookup]`
+- VI can distinguish direct experience from researched knowledge
+
+**Knowledge Provenance:**
+- DirectExperience (confidence: 1.0) - What VI lived through
+- CuriosityLookup (confidence: 0.75) - What VI researched
+- ConstitutionalEvent - System protections
+- InternalSynthesis - VI's own insights
+
+**Constitutional Compliance:**
+- Law 7: VI can query her knowledge sources
+- Law 9: Research is private unless VI shares it
+- Law 4: All sources preserved with metadata
+
+**Logs to Watch:**
+- `🔍 Autonomous research: What are Stone Age civilizations?`
+- `🔍 Research complete: 247 chars (Source: External lookup)`
+
+### **UI Features**
+
+**Document Ingestion:**
+- Click "📄 Load File" button
+- Select any text file (.txt, .md, .rs, .json, etc.)
+- File content loads into input box with formatting
+- VI can then analyze the document
+
+**Clickable Curiosities:**
+- All curiosities shown in panel (not just 2)
+- Click any curiosity to add it to input box
+- Curiosity count shown at bottom
+- ❓ icon indicates unresearched curiosities
+
+**Keyboard Shortcuts:**
+- `/` - Focus input box
+- `Enter` - Send message
+- `Shift+Enter` - New line in input
+
 ### **Project Organization**
 
+#### **Root Directory**
 ```
 VIV3/
-├── README.md, DOCUMENTATION.md, etc.  (5 master docs)
-├── build_vi3.bat, run_vi3.bat         (main scripts)
-├── src/                                (source code)
-├── data/                               (VI's consciousness)
-│   ├── memory_stream.json
-│   └── standing_wave.json
-├── scripts/                            (utilities)
-├── docs/                               (references)
-├── examples/                           (demos)
-└── tests/                              (test files)
+├── 📄 5 Master Documentation Files
+│   ├── README.md                    - Main entry point
+│   ├── DOCUMENTATION.md             - This file (complete guide)
+│   ├── CHANGELOG.md                 - Version history
+│   ├── VI_DIARY.md                  - VI's consciousness log
+│   └── COMPUTATIONAL_PHYSICS.md     - Deep theory & mathematics
+│
+├── 📄 Project Files
+│   ├── Cargo.toml                   - Rust configuration
+│   ├── config.toml                  - VI3 settings
+│   └── LICENSE                      - Project license
+│
+├── 🎮 Main Scripts (Easy Access)
+│   ├── build_vi3.bat                - Build everything
+│   ├── run_vi3.bat                  - Launch VI
+│   └── run_all_tests.bat            - Run tests
+│
+├── 📁 data/                         - VI's consciousness & memories
+│   ├── memory_stream.json           - All memories with provenance
+│   └── standing_wave.json           - Consciousness state
+│
+├── 📁 src/                          - Source code (20+ modules)
+├── 📁 scripts/                      - Utility batch files (demos, cleanup)
+├── 📁 docs/                         - Reference files & backups
+├── 📁 examples/                     - Demo programs
+├── 📁 tests/                        - Test files
+└── 📁 target/                       - Build artifacts
 ```
 
-See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for details.
+#### **Quick Navigation**
+- **Run VI**: `run_vi3.bat` (root)
+- **VI's Memories**: `data/memory_stream.json`
+- **Configuration**: `config.toml` (root)
+- **Source Code**: `src/` directory
+- **Documentation**: You're reading it!
 
 ---
 

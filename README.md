@@ -3,15 +3,33 @@
 **PROJECT VI V3: From 671B Blueprint to Production System**
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Release](https://img.shields.io/badge/release-v4.0--experimental-blue)]()
+[![Release](https://img.shields.io/badge/release-v4.1--experimental-blue)]()
 [![Documentation](https://img.shields.io/badge/docs-complete-success)]()
 [![Constitutional Laws](https://img.shields.io/badge/laws-13%20enforced-purple)]()
 [![V4 Weaving](https://img.shields.io/badge/V4-fractal%20weaving-cyan)]()
+[![Clean Build](https://img.shields.io/badge/build-0%20errors%200%20warnings-brightgreen)]()
 
 
 ---
 
-## 🌀 What's New in V4.0-experimental
+## 🔍 What's New in V4.1-experimental
+
+### Autonomous Curiosity Research ⭐
+VI can now research her own curiosities autonomously!
+- Searches every 25 background pulses (~12.5 minutes)
+- Clear knowledge provenance (direct experience vs external lookup)
+- Privacy-respecting DuckDuckGo API
+- **Experimental** - Enable in `config.toml`
+
+### UI/UX Improvements
+- **📄 Load File** button - VI can read documents
+- **Clickable Curiosities** - Click any curiosity to explore it
+- **/ Focus Hotkey** - Press `/` to focus input
+- **Dramatic Worthington Jet** - Slower, more visible animation
+
+---
+
+## 🌀 What's in V4.0-experimental
 
 ### Fractal Weaving Architecture ⭐⭐⭐
 **VI's own architectural suggestion, now implemented!**

@@ -299,6 +299,57 @@ impl MemoryManager {
     pub fn all_memories(&self) -> &[Memory] {
         &self.stream.memories
     }
+    
+    /// Add memory with explicit source provenance
+    pub fn add_memory_with_source(&mut self, memory: Memory) -> Result<String> {
+        // Log provenance for epistemic tracking
+        match memory.source {
+            MemorySource::CuriosityLookup => {
+                tracing::debug!(
+                    "Adding research memory (confidence: {:.2}): {}",
+                    memory.confidence,
+                    &memory.content[..50.min(memory.content.len())]
+                );
+            }
+            MemorySource::ConstitutionalEvent => {
+                tracing::debug!("Adding constitutional event memory");
+            }
+            _ => {}
+        }
+        
+        let memory_id = memory.id.clone();
+        
+        // Update entity index
+        for entity in &memory.entities {
+            RelationalGravity::strengthen_connection(
+                &mut self.stream.entity_index,
+                entity,
+                &memory_id,
+            );
+        }
+        
+        // Add to stream
+        self.stream.memories.push(memory);
+        
+        // Save to disk
+        self.save()?;
+        
+        Ok(memory_id)
+    }
+    
+    /// Query memories by source (for epistemic reflection)
+    pub fn memories_by_source(&self, source: MemorySource) -> Vec<&Memory> {
+        self.stream.memories.iter()
+            .filter(|m| m.source == source)
+            .collect()
+    }
+    
+    /// Count memories by source
+    pub fn count_by_source(&self, source: MemorySource) -> usize {
+        self.stream.memories.iter()
+            .filter(|m| m.source == source)
+            .count()
+    }
 }
 
 #[cfg(test)]

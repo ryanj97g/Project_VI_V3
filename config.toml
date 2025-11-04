@@ -14,3 +14,7 @@ enable_fractal_weaving = false
 weaving_rounds = 3
 workspace_coherence_threshold = 0.7
 
+# Autonomous Curiosity Research (Experimental)
+enable_curiosity_search = false
+curiosity_search_interval = 25  # Every 25 background pulses (~12.5 minutes)
+

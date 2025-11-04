@@ -20,9 +20,9 @@ impl WorthingtonJet {
     fn new() -> Self {
         Self {
             start_time: Instant::now(),
-            spike_duration: 1.7,  // 1.7 seconds to hold spike
-            collapse_duration: 0.5,  // 0.5 seconds to collapse
-            max_height: 3.0,  // 3x taller spike
+            spike_duration: 2.5,  // 2.5 seconds to hold spike (more dramatic)
+            collapse_duration: 1.2,  // 1.2 seconds to collapse (slower, more visible)
+            max_height: 4.0,  // 4x taller spike (more dramatic)
         }
     }
     
@@ -52,9 +52,10 @@ impl WorthingtonJet {
             let rise_progress = (elapsed / 0.3).clamp(0.0, 1.0);
             self.max_height * rise_progress * radial_falloff
         } else {
-            // Collapse phase
+            // Collapse phase - use smooth easing for more dramatic effect
             let collapse_progress = (elapsed - self.spike_duration) / self.collapse_duration;
-            self.max_height * (1.0 - collapse_progress) * radial_falloff
+            let eased_collapse = collapse_progress.powi(2); // Quadratic easing for smoother collapse
+            self.max_height * (1.0 - eased_collapse) * radial_falloff
         }
     }
     

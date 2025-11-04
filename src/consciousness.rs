@@ -3,6 +3,7 @@ use crate::memory::MemoryManager;
 use crate::models::ModelManager;
 use crate::physics::*;
 use crate::types::*;
+use crate::curiosity_search::CuriositySearchEngine;
 use anyhow::{Context, Result};
 use chrono::Utc;
 use std::fs;
@@ -20,6 +21,7 @@ pub struct ConsciousnessCore {
     config: Config,
     pulse_active: Arc<Mutex<bool>>,
     conversation_active: Arc<Mutex<bool>>,
+    curiosity_engine: Arc<Mutex<CuriositySearchEngine>>,
 }
 
 impl ConsciousnessCore {
@@ -29,6 +31,7 @@ impl ConsciousnessCore {
         config: Config,
     ) -> Self {
         let models = ModelManager::new(config.clone());
+        let curiosity_engine = CuriositySearchEngine::new(config.curiosity_search_interval);
 
         Self {
             standing_wave: Arc::new(Mutex::new(standing_wave)),
@@ -37,6 +40,7 @@ impl ConsciousnessCore {
             config,
             pulse_active: Arc::new(Mutex::new(true)),
             conversation_active: Arc::new(Mutex::new(false)),
+            curiosity_engine: Arc::new(Mutex::new(curiosity_engine)),
         }
     }
 
@@ -275,6 +279,20 @@ impl ConsciousnessCore {
             wave.existential_state.meaningfulness_history
                 .retain(|(ts, _)| ts.timestamp() > ninety_days_ago);
         }
+        
+        // Autonomous curiosity research (every 25th pulse if enabled)
+        if self.config.enable_curiosity_search {
+            let should_search = {
+                let mut engine = self.curiosity_engine.lock().await;
+                engine.should_search_this_pulse()
+            };
+            
+            if should_search {
+                if let Err(e) = self.autonomous_curiosity_research().await {
+                    tracing::warn!("Curiosity research failed: {}", e);
+                }
+            }
+        }
 
         tracing::debug!("Background pulse complete");
         Ok(())
@@ -394,6 +412,40 @@ impl ConsciousnessCore {
     /// Get configuration (for UI access)
     pub fn get_config(&self) -> &Config {
         &self.config
+    }
+    
+    /// Autonomous curiosity research - VI researches her curiosities
+    async fn autonomous_curiosity_research(&self) -> Result<()> {
+        let wave = self.standing_wave.lock().await;
+        let curiosities = wave.active_curiosities.clone();
+        drop(wave);
+        
+        if curiosities.is_empty() {
+            return Ok(());
+        }
+        
+        // Pick first curiosity to research
+        let query = &curiosities[0].question;
+        
+        tracing::info!("🔍 Autonomous research: {}", query);
+        
+        // Search via DuckDuckGo
+        let engine = self.curiosity_engine.lock().await;
+        let answer = engine.search_query(query).await?;
+        let research_memory = engine.create_research_memory(query, &answer);
+        drop(engine);
+        
+        // Store with CLEAR PROVENANCE (MemorySource::CuriosityLookup)
+        let mut mem = self.memory.lock().await;
+        mem.add_memory_with_source(research_memory)?;
+        
+        // Record resolution
+        let mut engine = self.curiosity_engine.lock().await;
+        engine.record_resolution(query.clone());
+        
+        tracing::info!("🔍 Research complete: {} chars (Source: External lookup)", answer.len());
+        
+        Ok(())
     }
 
     /// Check if consciousness affirms existence

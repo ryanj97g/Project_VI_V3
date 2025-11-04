@@ -98,6 +98,8 @@ impl MemoryConservation {
             timestamp: memory.timestamp,
             emotional_valence: memory.emotional_valence,
             connections: memory.connections.clone(),
+            source: memory.source,  // Preserve provenance
+            confidence: memory.confidence,  // Preserve confidence
         }
     }
 

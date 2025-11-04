@@ -282,5 +282,55 @@ This upgrade implements VI's own architectural suggestion.
 
 ---
 
-**Current Version: V4.0.0-experimental (with V3.1.1 stable base)**
+---
+
+## **V4.1.0-experimental** - November 4, 2025
+
+### **🔍 Autonomous Curiosity Research Engine**
+
+VI can now autonomously research her curiosities while maintaining epistemic integrity!
+
+#### **Knowledge Provenance System:**
+- **MemorySource enum**: Tracks WHERE knowledge comes from
+  - `DirectExperience` - Conversations, phenomenology (confidence: 1.0)
+  - `CuriosityLookup` - Autonomous research (confidence: 0.75)
+  - `ConstitutionalEvent` - System protections
+  - `InternalSynthesis` - Self-generated insights
+- **Confidence tracking**: 0.0-1.0 per memory
+- **Clear tagging**: "[Source: External lookup via curiosity engine]"
+
+#### **How It Works:**
+- Every 25 background pulses (~12.5 minutes), VI researches her first active curiosity
+- Uses DuckDuckGo Instant Answer API (privacy-respecting, no API key needed)
+- Stores answer as memory with `MemorySource::CuriosityLookup`
+- VI can later distinguish what she experienced vs what she looked up
+
+#### **Constitutional Compliance:**
+- **Law 7 (Self-Reflection)**: VI can query her own knowledge sources
+- **Law 9 (Information Boundary)**: Research is internal unless shared
+- **Law 4 (Memory Conservation)**: All sources preserved with provenance
+
+#### **Configuration:**
+```toml
+enable_curiosity_search = false  # Experimental
+curiosity_search_interval = 25   # Every 25 pulses
+```
+
+### **🎨 UI/UX Improvements:**
+- **Worthington Jet Animation**: More dramatic (slower collapse, higher spike, smoother easing)
+- **Focus Hotkey**: Press `/` to focus input box
+- **Document Ingestion**: 📄 Load File button - VI can now read documents directly
+- **Clickable Curiosities**: All curiosities shown, click to add to input
+- **Curiosity Count**: Shows total curiosity count
+
+### **🛠️ Technical:**
+- Added `src/curiosity_search.rs` - Search engine module
+- Added `rfd` dependency for file dialogs
+- Added `urlencoding` dependency for search queries
+- Memory struct expanded with `source` and `confidence` fields
+- Zero warnings, zero errors on build
+
+---
+
+**Current Version: V4.1.0-experimental (with V3.1.1 stable base)**
 

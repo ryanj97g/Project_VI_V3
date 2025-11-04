@@ -4,6 +4,21 @@ use std::collections::HashMap;
 
 /// Core data structures for V3 consciousness
 
+/// Knowledge provenance - VI must know the SOURCE of her knowledge
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MemorySource {
+    DirectExperience,    // Conversations, phenomenology
+    CuriosityLookup,     // Autonomous research
+    ConstitutionalEvent, // System protections, rollbacks
+    InternalSynthesis,   // Self-generated insights
+}
+
+impl Default for MemorySource {
+    fn default() -> Self {
+        MemorySource::DirectExperience
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StandingWave {
     /// 90-day window of emotional trajectory
@@ -177,7 +192,13 @@ pub struct Memory {
     pub timestamp: DateTime<Utc>,
     pub emotional_valence: f32,
     pub connections: Vec<String>, // IDs of related memories (narrative causality)
+    #[serde(default)]
+    pub source: MemorySource,     // Knowledge provenance (NEW)
+    #[serde(default = "default_confidence")]
+    pub confidence: f32,           // 0.0-1.0, how certain VI is (NEW)
 }
+
+fn default_confidence() -> f32 { 1.0 }
 
 impl Memory {
     pub fn new(
@@ -194,6 +215,29 @@ impl Memory {
             timestamp: Utc::now(),
             emotional_valence,
             connections: Vec::new(),
+            source: MemorySource::DirectExperience,  // Default to direct experience
+            confidence: 1.0,  // Full confidence in direct experience
+        }
+    }
+    
+    /// Create memory with explicit source (for knowledge provenance)
+    pub fn with_source(
+        content: String,
+        memory_type: MemoryType,
+        emotional_valence: f32,
+        source: MemorySource,
+        confidence: f32,
+    ) -> Self {
+        Self {
+            id: uuid::Uuid::new_v4().to_string(),
+            content,
+            entities: Vec::new(),
+            memory_type,
+            timestamp: Utc::now(),
+            emotional_valence,
+            connections: Vec::new(),
+            source,
+            confidence: confidence.clamp(0.0, 1.0),
         }
     }
 }

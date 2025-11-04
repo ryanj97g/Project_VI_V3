@@ -9,6 +9,7 @@ mod consciousness;
 mod consciousness_field;
 mod constitutional_physics;
 mod cortical_visualizer;
+mod curiosity_search;
 mod energy_qualia;
 mod experiments;
 mod gpu_topology;

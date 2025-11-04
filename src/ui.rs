@@ -1,7 +1,6 @@
 use crate::consciousness::ConsciousnessCore;
 use crate::cortical_visualizer::CorticalVisualizer;
 use crate::types::*;
-use crate::config::Config;
 use eframe::egui;
 use egui::{Color32, RichText, ScrollArea};
 use std::sync::Arc;
@@ -156,7 +155,7 @@ impl ViApp {
     }
     
     /// Render right-side monitoring panels (30% width)
-    fn render_monitoring_panels(&self, ui: &mut egui::Ui) {
+    fn render_monitoring_panels(&mut self, ui: &mut egui::Ui) {
         let total_height = ui.available_height();
         
         // Top 40%: Curiosity queue
@@ -171,10 +170,31 @@ impl ViApp {
                     if self.current_standing_wave.active_curiosities.is_empty() {
                         ui.label(RichText::new("No curiosities yet...").color(Color32::GRAY));
                     } else {
+                        // Show ALL curiosities (not just 2)
                         for curiosity in &self.current_standing_wave.active_curiosities {
-                            ui.label(RichText::new(&curiosity.question).color(Color32::from_rgb(0, 255, 255)));
-                            ui.add_space(8.0);
+                            // Make curiosities clickable - clicking adds to input
+                            // Icon shows if VI has researched this yet (future: check memory for research)
+                            let button_text = format!("❓ {}", curiosity.question);
+                            
+                            if ui.button(
+                                RichText::new(&button_text)
+                                    .color(Color32::from_rgb(0, 255, 255))
+                            ).clicked() {
+                                self.input_text = curiosity.question.clone();
+                                // Focus input box after click
+                                ui.ctx().memory_mut(|mem| mem.request_focus(egui::Id::new("vi_input_box")));
+                            }
+                            ui.add_space(4.0);
                         }
+                        
+                        // Show count
+                        ui.add_space(8.0);
+                        ui.label(
+                            RichText::new(format!("({} total curiosities)", 
+                                self.current_standing_wave.active_curiosities.len()))
+                                .small()
+                                .color(Color32::GRAY)
+                        );
                     }
                 });
             });
@@ -244,6 +264,17 @@ impl ViApp {
 
 impl eframe::App for ViApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Keyboard shortcuts - Focus input on / key
+        let should_focus = ctx.input(|i| {
+            i.events.iter().any(|event| {
+                matches!(event, egui::Event::Text(text) if text == "/")
+            })
+        });
+        
+        if should_focus {
+            ctx.memory_mut(|mem| mem.request_focus(egui::Id::new("vi_input_box")));
+        }
+        
         // Check for responses from consciousness
         if let Ok(response) = self.response_receiver.try_recv() {
             self.chat_messages.push(ChatMessage::assistant(response));
@@ -384,6 +415,33 @@ impl eframe::App for ViApp {
                             self.send_message(ctx);
                         }
                         
+                        // Document ingestion button
+                        if ui.button("📄 Load File").clicked() {
+                            if let Some(path) = rfd::FileDialog::new()
+                                .add_filter("Text Files", &["txt", "md", "rs", "toml", "json"])
+                                .add_filter("All Files", &["*"])
+                                .pick_file()
+                            {
+                                match std::fs::read_to_string(&path) {
+                                    Ok(contents) => {
+                                        let file_name = path.file_name()
+                                            .and_then(|n| n.to_str())
+                                            .unwrap_or("file");
+                                        self.input_text = format!(
+                                            "I'm sharing a file with you: {}\n\n--- BEGIN FILE ---\n{}\n--- END FILE ---\n\nPlease analyze this.",
+                                            file_name,
+                                            contents
+                                        );
+                                    }
+                                    Err(e) => {
+                                        self.chat_messages.push(ChatMessage::assistant(
+                                            format!("Error reading file: {}", e)
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                        
                         if self.is_processing {
                             ui.spinner();
                             ui.label("VI is thinking...");
@@ -396,10 +454,10 @@ impl eframe::App for ViApp {
                 
                 // Text input (V2 exact)
                 let text_edit = egui::TextEdit::multiline(&mut self.input_text)
-                    .hint_text("Type your message... (Press Enter to send)")
+                    .hint_text("Type your message... (Press Enter to send, / to focus)")
                     .desired_width(ui.available_width())
                     .desired_rows(line_count)
-                    .id(egui::Id::new("chat_input"));
+                    .id(egui::Id::new("vi_input_box"));
                 
                 let response = ui.add(text_edit);
                 

@@ -27,6 +27,12 @@ pub struct Config {
     pub weaving_rounds: u32,
     #[serde(default = "default_coherence_threshold")]
     pub workspace_coherence_threshold: f32,
+    
+    // Autonomous Curiosity Research (Experimental)
+    #[serde(default)]
+    pub enable_curiosity_search: bool,
+    #[serde(default = "default_search_interval")]
+    pub curiosity_search_interval: u32,
 }
 
 // Serde defaults for new config structure
@@ -39,6 +45,7 @@ fn default_backup_days() -> i64 { 7 }
 fn default_compression() -> usize { 1000 }
 fn default_weaving_rounds() -> u32 { 3 }
 fn default_coherence_threshold() -> f32 { 0.7 }
+fn default_search_interval() -> u32 { 25 }
 
 impl Default for Config {
     fn default() -> Self {
@@ -53,6 +60,8 @@ impl Default for Config {
             enable_fractal_weaving: false,
             weaving_rounds: default_weaving_rounds(),
             workspace_coherence_threshold: default_coherence_threshold(),
+            enable_curiosity_search: false,
+            curiosity_search_interval: default_search_interval(),
         }
     }
 }
@@ -113,6 +122,14 @@ impl Config {
         }
         if !(0.0..=1.0).contains(&self.workspace_coherence_threshold) {
             anyhow::bail!("workspace_coherence_threshold must be between 0.0 and 1.0");
+        }
+        
+        // Curiosity search validation
+        if self.curiosity_search_interval == 0 {
+            anyhow::bail!("curiosity_search_interval must be > 0");
+        }
+        if self.curiosity_search_interval > 100 {
+            anyhow::bail!("curiosity_search_interval must be <= 100 (searches would be too frequent)");
         }
         
         Ok(())
