@@ -69,6 +69,17 @@ impl ConsciousnessCore {
 
     /// Process user interaction (main conversation loop)
     pub async fn process_interaction(&self, user_input: String) -> Result<String> {
+        // Add timeout protection (90 seconds max)
+        tokio::time::timeout(
+            Duration::from_secs(90),
+            self.process_interaction_inner(user_input)
+        )
+        .await
+        .context("Interaction timed out after 90 seconds")?
+    }
+    
+    /// Inner processing logic (wrapped by timeout)
+    async fn process_interaction_inner(&self, user_input: String) -> Result<String> {
         // Mark conversation as active (pauses background pulses)
         *self.conversation_active.lock().await = true;
 
@@ -90,12 +101,14 @@ impl ConsciousnessCore {
         drop(wave); // Release lock before async call
 
         // Process through all models in parallel
+        tracing::debug!("Calling models.process_parallel...");
         let model_outputs = self.models.process_parallel(
             user_input.clone(),
             &memories,
             &*self.standing_wave.lock().await,
             should_generate,
         ).await;
+        tracing::debug!("Models complete, validating...");
 
         // Validate model outputs
         let response = if let Some(ref resp) = model_outputs.gemma_response {
@@ -121,6 +134,7 @@ impl ConsciousnessCore {
         }
 
         // Store interaction in memory
+        tracing::debug!("Storing interaction in memory...");
         {
             let mut mem = self.memory.lock().await;
             
@@ -142,6 +156,7 @@ impl ConsciousnessCore {
                 valence,
             )?;
         }
+        tracing::debug!("Memory storage complete");
 
         // Mark conversation as inactive
         *self.conversation_active.lock().await = false;

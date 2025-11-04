@@ -126,17 +126,24 @@ impl ViApp {
         
         std::thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async {
-                match consciousness.process_interaction(user_message).await {
-                    Ok(response) => {
-                        let _ = sender.send(response);
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                rt.block_on(async {
+                    match consciousness.process_interaction(user_message).await {
+                        Ok(response) => {
+                            let _ = sender.send(response);
+                        }
+                        Err(e) => {
+                            tracing::error!("Processing error: {}", e);
+                            let _ = sender.send(format!("[VI experienced a processing error: {}]", e));
+                        }
                     }
-                    Err(e) => {
-                        tracing::error!("Error: {}", e);
-                        let _ = sender.send(format!("Error: {}", e));
-                    }
-                }
-            });
+                })
+            }));
+            
+            if let Err(e) = result {
+                tracing::error!("PANIC caught in interaction thread: {:?}", e);
+                let _ = sender.send("[VI encountered a critical error and is recovering...]".to_string());
+            }
         });
     }
     
