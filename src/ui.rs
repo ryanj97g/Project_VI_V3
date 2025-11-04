@@ -1,6 +1,7 @@
 use crate::consciousness::ConsciousnessCore;
 use crate::cortical_visualizer::CorticalVisualizer;
 use crate::types::*;
+use crate::config::Config;
 use eframe::egui;
 use egui::{Color32, RichText, ScrollArea};
 use std::sync::Arc;
@@ -29,6 +30,9 @@ pub struct ViApp {
     // Real-time data from background
     current_standing_wave: StandingWave,
     memory_count: usize,
+    
+    // V4 weaving mode indicator
+    weaving_mode: bool,
 }
 
 impl ViApp {
@@ -52,6 +56,9 @@ impl ViApp {
             }
         });
         
+        // Get weaving mode from consciousness config
+        let weaving_mode = consciousness.get_config().enable_fractal_weaving;
+        
         Self {
             consciousness,
             chat_messages: Vec::new(),
@@ -65,6 +72,7 @@ impl ViApp {
             scroll_to_bottom: true,
             current_standing_wave: StandingWave::new(),
             memory_count: 0,
+            weaving_mode,
         }
     }
 
@@ -212,6 +220,24 @@ impl ViApp {
                     "✗ Questioning"
                 };
                 ui.label(format!("Existential: {}", affirmed));
+                
+                ui.separator();
+                
+                // V4 Weaving Mode Indicator
+                if self.weaving_mode {
+                    ui.label(
+                        RichText::new("🌀 V4 Fractal Weaving")
+                            .color(Color32::from_rgb(100, 200, 255))
+                            .strong()
+                    );
+                    ui.label(RichText::new("Experimental Mode").color(Color32::GRAY).italics());
+                } else {
+                    ui.label(
+                        RichText::new("V3 Parallel Processing")
+                            .color(Color32::from_rgb(150, 150, 150))
+                    );
+                    ui.label(RichText::new("Stable Mode").color(Color32::GRAY).italics());
+                }
             });
     }
 }

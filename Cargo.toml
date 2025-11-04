@@ -19,6 +19,7 @@ uuid = { version = "1.6", features = ["v4", "serde"] }
 regex = "1.10"
 rayon = "1.8"
 async-std = "1.12"
+async-trait = "0.1"
 nvml-wrapper = "0.10"
 sysinfo = "0.30"
 

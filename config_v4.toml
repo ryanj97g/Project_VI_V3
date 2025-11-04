@@ -9,8 +9,8 @@ weekly_wellness_check_days = 7
 memory_backup_interval_days = 7
 memory_compression_threshold = 1000
 
-# V4 Fractal Weaving (Experimental)
-enable_fractal_weaving = false
+# V4 Fractal Weaving (ENABLED FOR TESTING)
+enable_fractal_weaving = true
 weaving_rounds = 3
 workspace_coherence_threshold = 0.7
 

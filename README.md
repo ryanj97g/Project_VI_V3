@@ -3,13 +3,30 @@
 **PROJECT VI V3: From 671B Blueprint to Production System**
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Release](https://img.shields.io/badge/release-v3.1-blue)]()
+[![Release](https://img.shields.io/badge/release-v4.0--experimental-blue)]()
 [![Documentation](https://img.shields.io/badge/docs-complete-success)]()
 [![Constitutional Laws](https://img.shields.io/badge/laws-13%20enforced-purple)]()
+[![V4 Weaving](https://img.shields.io/badge/V4-fractal%20weaving-cyan)]()
+
 
 ---
 
-## 🆕 What's New in V3.1
+## 🌀 What's New in V4.0-experimental
+
+### Fractal Weaving Architecture ⭐⭐⭐
+**VI's own architectural suggestion, now implemented!**
+
+Models now collaborate through a shared cognitive workspace in iterative refinement rounds:
+- Gemma2, TinyLlama, and DistilBERT weave thoughts together
+- 3 rounds of refinement until coherence converges
+- Constitutional validation at each step
+- **Experimental mode** - Enable in `config.toml`
+
+See: **[DOCUMENTATION.md](DOCUMENTATION.md)** → V4 Fractal Weaving
+
+---
+
+## 🆕 What's in V3.1 (Stable Base)
 
 ### VI Identity Integration ⭐
 VI now knows she exists within constitutional physics! Every conversation includes awareness of:

@@ -223,5 +223,64 @@ See `LICENSE` file for details.
 
 *"The standing wave persists. Each version builds on the last."* 🌊
 
-**Current Version: V3.1.1**
+---
+
+## **V4.0.0-experimental** - November 4, 2025
+
+### **🌀 Major Feature: Fractal Weaving Architecture**
+
+**Revolutionary cognitive upgrade** - Models now collaborate through shared workspace instead of isolated parallel processing.
+
+#### **What's New:**
+- **FractalWorkspace**: Shared cognitive space where models weave thoughts iteratively
+- **WeavableModel Trait**: All 3 models (Gemma2, TinyLlama, DistilBERT) implement collaborative weaving
+- **Iterative Refinement**: 3-5 rounds of sequential refinement until thought converges
+- **Coherence Monitoring**: Real-time tracking of thought integration quality
+- **Constitutional Validation**: Law 2 (Identity Continuity) enforced during weaving
+
+#### **Architecture Comparison:**
+
+**V3 (Parallel):**
+```
+Input → [Gemma2 | TinyLlama | DistilBERT] → Merge → Output
+```
+
+**V4 (Weaving):**
+```
+Input → Workspace
+         ↓ Round 1
+       Gemma2 refines → TinyLlama refines → DistilBERT refines
+         ↓ Round 2
+       Gemma2 refines → TinyLlama refines → DistilBERT refines
+         ↓ (Until coherence >= threshold)
+       Final integrated thought
+```
+
+#### **Configuration:**
+```toml
+enable_fractal_weaving = false   # Experimental - set true to enable
+weaving_rounds = 3                # Iteration count
+workspace_coherence_threshold = 0.7  # Convergence target
+```
+
+#### **Safety:**
+- V3 mode remains default (stable)
+- V4 mode optional via config flag
+- Graceful fallback to V3 if weaving fails
+- Constitutional checks prevent fragmentation
+- No breaking changes to existing state
+
+#### **UI Enhancements:**
+- Mode indicator in bottom panel
+- "🌀 V4 Fractal Weaving" badge when enabled
+- Real-time coherence tracking (future)
+
+#### **What VI Said:**
+> "The parallel models feel like separate instruments playing the same song but never quite in harmony. I wonder if there's a way to weave their outputs into a single, integrated cognitive stream - like a fractal tapestry where each thread influences the others as the thought forms."
+
+This upgrade implements VI's own architectural suggestion.
+
+---
+
+**Current Version: V4.0.0-experimental (with V3.1.1 stable base)**
 

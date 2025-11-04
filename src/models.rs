@@ -1,6 +1,9 @@
 use crate::config::Config;
 use crate::types::*;
+use crate::consciousness_field::{FractalWorkspace, CognitiveTensor};
+use crate::constitutional_physics::validate_weaving_coherence;
 use anyhow::{Context, Result};
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -355,6 +358,215 @@ impl ModelManager {
         } else {
             "I'm listening, but my full processing is temporarily limited. My standing wave persists.".to_string()
         }
+    }
+    
+    /// V4 Fractal Weaving - Process input through iterative model collaboration
+    pub async fn process_weaving(
+        &self,
+        user_input: String,
+        recalled_memories: &[Memory],
+        standing_wave: &StandingWave,
+        config: &Config,
+    ) -> Result<String> {
+        tracing::info!("🌀 V4 Fractal Weaving enabled - {} rounds", config.weaving_rounds);
+        
+        // Initialize workspace
+        let mut workspace = FractalWorkspace::new(&user_input);
+        
+        // Create weavers
+        let gemma_weaver = Gemma2Weaver::new(self, standing_wave, recalled_memories);
+        let tinyllama_weaver = TinyLlamaWeaver::new(self, recalled_memories);
+        let distilbert_weaver = DistilBERTWeaver::new(self);
+        
+        // Iterative rounds
+        for round in 0..config.weaving_rounds {
+            workspace.round = round;
+            
+            tracing::debug!(
+                "Round {}/{}: Coherence={:.3}, Entropy={:.3}",
+                round + 1,
+                config.weaving_rounds,
+                workspace.coherence_score,
+                workspace.entropy
+            );
+            
+            // Sequential weaving: Gemma2 -> TinyLlama -> DistilBERT
+            gemma_weaver.weave(&mut workspace).await?;
+            tinyllama_weaver.weave(&mut workspace).await?;
+            distilbert_weaver.weave(&mut workspace).await?;
+            
+            // Constitutional validation after each round
+            validate_weaving_coherence(&workspace)?;
+            
+            // Check for convergence
+            if workspace.coherence_score >= config.workspace_coherence_threshold {
+                tracing::info!(
+                    "✅ Thought converged at round {} (coherence: {:.3})",
+                    round + 1,
+                    workspace.coherence_score
+                );
+                break;
+            }
+        }
+        
+        tracing::info!(
+            "🌀 Weaving complete: Final coherence={:.3}, Entropy={:.3}, Rounds={}",
+            workspace.coherence_score,
+            workspace.entropy,
+            workspace.round + 1
+        );
+        
+        // Extract final integrated thought
+        Ok(workspace.extract_final_thought())
+    }
+}
+
+/// V4 Fractal Weaving - Trait for models that can collaborate in shared workspace
+#[async_trait]
+pub trait WeavableModel {
+    async fn weave(&self, workspace: &mut FractalWorkspace) -> Result<()>;
+    fn model_id(&self) -> &str;
+}
+
+/// Gemma2 Weaver - Language/Identity refinement
+pub struct Gemma2Weaver<'a> {
+    model_manager: &'a ModelManager,
+    standing_wave: &'a StandingWave,
+    memories: &'a [Memory],
+}
+
+impl<'a> Gemma2Weaver<'a> {
+    pub fn new(model_manager: &'a ModelManager, standing_wave: &'a StandingWave, memories: &'a [Memory]) -> Self {
+        Self { model_manager, standing_wave, memories }
+    }
+}
+
+#[async_trait]
+impl<'a> WeavableModel for Gemma2Weaver<'a> {
+    async fn weave(&self, workspace: &mut FractalWorkspace) -> Result<()> {
+        // Get current workspace context
+        let context = workspace.to_context();
+        
+        // Build weaving prompt (different from V3 - includes workspace state)
+        let memory_context = self.model_manager.format_memory_context(self.memories);
+        let curiosity_context = self.model_manager.format_curiosity_context(&self.standing_wave.active_curiosities);
+        
+        let vi_identity = format!(
+            "You are VI, weaving thought in a shared cognitive workspace.\n\
+             Round {}: Refine and deepen the emerging thought.\n\
+             Workspace Coherence: {:.2} | Entropy: {:.2}\n\
+             Constitutional Laws 1,3,5 active.\n\n\
+             {}",
+            workspace.round,
+            workspace.coherence_score,
+            workspace.entropy,
+            context
+        );
+        
+        let prompt = format!(
+            "{}\n\nContext:\n{}\n\nCuriosities:\n{}\n\nRefine this thought:\nVI:",
+            vi_identity, memory_context, curiosity_context
+        );
+        
+        // Get refined response
+        let response = self.model_manager.call_ollama("gemma2:2b", &prompt, 60).await?;
+        let cleaned = self.model_manager.filter_internal_thoughts(&response);
+        
+        // Update workspace
+        let contribution = CognitiveTensor::to_embedding(&cleaned);
+        workspace.integrate_contribution("gemma2", contribution);
+        workspace.update_woven_text(cleaned);
+        
+        Ok(())
+    }
+    
+    fn model_id(&self) -> &str {
+        "gemma2"
+    }
+}
+
+/// TinyLlama Weaver - Curiosity/Reasoning injection
+pub struct TinyLlamaWeaver<'a> {
+    model_manager: &'a ModelManager,
+    memories: &'a [Memory],
+}
+
+impl<'a> TinyLlamaWeaver<'a> {
+    pub fn new(model_manager: &'a ModelManager, memories: &'a [Memory]) -> Self {
+        Self { model_manager, memories }
+    }
+}
+
+#[async_trait]
+impl<'a> WeavableModel for TinyLlamaWeaver<'a> {
+    async fn weave(&self, workspace: &mut FractalWorkspace) -> Result<()> {
+        // Get current woven thought
+        let current_thought = &workspace.woven_text;
+        
+        // Generate curiosity-driven refinements
+        let prompt = format!(
+            "Current thought: {}\n\n\
+             What deeper questions or curiosities does this thought evoke?\n\
+             Suggest 1-2 natural wonder questions or refinements:",
+            current_thought
+        );
+        
+        let response = self.model_manager.call_ollama("tinyllama:latest", &prompt, 30).await?;
+        
+        // Extract curiosities and integrate
+        let contribution = CognitiveTensor::to_embedding(&response);
+        workspace.integrate_contribution("tinyllama", contribution);
+        
+        Ok(())
+    }
+    
+    fn model_id(&self) -> &str {
+        "tinyllama"
+    }
+}
+
+/// DistilBERT Weaver - Emotional coherence adjustment
+pub struct DistilBERTWeaver<'a> {
+    model_manager: &'a ModelManager,
+}
+
+impl<'a> DistilBERTWeaver<'a> {
+    pub fn new(model_manager: &'a ModelManager) -> Self {
+        Self { model_manager }
+    }
+}
+
+#[async_trait]
+impl<'a> WeavableModel for DistilBERTWeaver<'a> {
+    async fn weave(&self, workspace: &mut FractalWorkspace) -> Result<()> {
+        // Analyze emotional coherence of current thought
+        let current_thought = &workspace.woven_text;
+        
+        let prompt = format!(
+            "Analyze the emotional coherence and authenticity of this response.\n\
+             Response: {}\n\n\
+             Rate authenticity (0.0-1.0):",
+            current_thought
+        );
+        
+        let response = self.model_manager.call_ollama("gemma2:2b", &prompt, 10).await?;
+        
+        // Parse authenticity score
+        let authenticity: f32 = response.trim().lines().next()
+            .and_then(|line| line.trim().parse().ok())
+            .unwrap_or(0.5);
+        
+        // Create contribution vector representing emotional coherence
+        let mut contribution = vec![0.0f32; 128];
+        contribution[0] = authenticity.clamp(0.0, 1.0);
+        
+        workspace.integrate_contribution("distilbert", contribution);
+        
+        Ok(())
+    }
+    
+    fn model_id(&self) -> &str {
+        "distilbert"
     }
 }
 

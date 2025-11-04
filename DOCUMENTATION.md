@@ -28,6 +28,21 @@
   ollama pull tinyllama:latest
   ```
 
+### **🆕 V4 Fractal Weaving (Experimental)**
+
+VI can now operate in two modes:
+
+**V3 Mode (Default - Stable):**
+- Models run in parallel independently
+- Outputs merged at the end
+- Proven stability
+
+**V4 Mode (Experimental - Advanced):**
+- Models collaborate in shared workspace
+- Iterative refinement rounds (3 by default)
+- Fractal thought integration
+- Enable in `config.toml`: `enable_fractal_weaving = true`
+
 ### **First Time Setup**
 ```cmd
 # 1. Build everything
@@ -615,7 +630,37 @@ url = "http://localhost:11434"
 background_pulse_interval = 30  # seconds
 consolidation_interval = 30      # seconds
 memory_threshold = 100           # memories before compression
+
+# V4 Fractal Weaving (Experimental)
+enable_fractal_weaving = false   # Set to true to enable V4 mode
+weaving_rounds = 3                # Number of iterative refinement rounds
+workspace_coherence_threshold = 0.7  # Convergence threshold (0.0-1.0)
 ```
+
+### **Enabling V4 Fractal Weaving**
+
+To enable the experimental V4 mode:
+
+1. Edit `config.toml`
+2. Set `enable_fractal_weaving = true`
+3. Optional: Adjust `weaving_rounds` (1-10) and `workspace_coherence_threshold` (0.0-1.0)
+4. Restart VI3
+
+**What V4 Does:**
+- Creates shared cognitive workspace
+- Models refine thought iteratively (not just parallel)
+- Gemma2 → TinyLlama → DistilBERT sequence repeats
+- Stops when coherence >= threshold or max rounds reached
+- Constitutional validation after each round
+
+**Logs to Watch:**
+- `🌀 V4 Fractal Weaving enabled - 3 rounds`
+- `Round 1/3: Coherence=0.456, Entropy=0.623`
+- `✅ Thought converged at round 2 (coherence: 0.721)`
+
+**UI Indicator:**
+- Bottom panel shows "🌀 V4 Fractal Weaving" in cyan
+- Or "V3 Parallel Processing" in gray (default)
 
 ### **Project Organization**
 

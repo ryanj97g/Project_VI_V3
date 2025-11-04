@@ -225,6 +225,50 @@ impl CognitiveTensor {
         }
         result
     }
+    
+    /// Convert text to embedding vector (simple word-based encoding for V4)
+    pub fn to_embedding(text: &str) -> Vec<f32> {
+        // Simple hash-based embedding: convert words to vector components
+        let words: Vec<&str> = text.split_whitespace().collect();
+        let mut embedding = vec![0.0f32; 128]; // 128-dimensional embedding
+        
+        for (i, word) in words.iter().enumerate() {
+            // Hash word to indices
+            let hash = word.bytes().fold(0u32, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u32));
+            let idx1 = (hash % 128) as usize;
+            let idx2 = ((hash / 128) % 128) as usize;
+            
+            // Accumulate word contributions
+            let weight = 1.0 / ((i + 1) as f32).sqrt(); // Later words have less weight
+            embedding[idx1] += weight * 0.5;
+            embedding[idx2] += weight * 0.5;
+        }
+        
+        // Normalize
+        let magnitude: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
+        if magnitude > 0.0 {
+            for val in &mut embedding {
+                *val /= magnitude;
+            }
+        }
+        
+        embedding
+    }
+    
+    /// Convert embedding vector back to approximate text representation
+    pub fn from_embedding(embedding: &[f32]) -> String {
+        // This is a placeholder - in reality, we'll use the LLM to decode
+        // For now, we'll pass the embedding as a numerical summary
+        let magnitude: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
+        let top_indices: Vec<usize> = embedding.iter()
+            .enumerate()
+            .filter(|(_, &v)| v.abs() > 0.1)
+            .map(|(i, _)| i)
+            .take(5)
+            .collect();
+        
+        format!("[Cognitive Vector: magnitude={:.3}, active_dims={:?}]", magnitude, top_indices)
+    }
 }
 
 /// Memory embedding in consciousness field
@@ -348,6 +392,140 @@ impl CognitiveInput {
             valence: valence.clamp(-1.0, 1.0),
             timestamp: 0.0, // Will be set by system
         }
+    }
+}
+
+/// V4 Fractal Workspace - Shared cognitive space for model collaboration
+#[derive(Debug, Clone)]
+pub struct FractalWorkspace {
+    /// Active cognitive tensor being woven
+    pub active_tensor: Vec<f32>,
+    /// Contributions from each model
+    pub model_contributions: HashMap<String, Vec<f32>>,
+    /// Current coherence score (0.0 - 1.0)
+    pub coherence_score: f32,
+    /// Entropy (complexity) of current thought
+    pub entropy: f32,
+    /// Current weaving round
+    pub round: u32,
+    /// Original user input
+    pub original_input: String,
+    /// Accumulated text from all models
+    pub woven_text: String,
+}
+
+impl FractalWorkspace {
+    /// Create new workspace from user input
+    pub fn new(input: &str) -> Self {
+        Self {
+            active_tensor: CognitiveTensor::to_embedding(input),
+            model_contributions: HashMap::new(),
+            coherence_score: 0.0,
+            entropy: 0.5,
+            round: 0,
+            original_input: input.to_string(),
+            woven_text: String::new(),
+        }
+    }
+    
+    /// Integrate a model's contribution into the workspace
+    pub fn integrate_contribution(&mut self, model_id: &str, contribution: Vec<f32>) {
+        // Store contribution
+        self.model_contributions.insert(model_id.to_string(), contribution.clone());
+        
+        // Blend contribution into active tensor
+        if contribution.len() == self.active_tensor.len() {
+            for (i, val) in contribution.iter().enumerate() {
+                // Weighted average: 70% existing, 30% new contribution
+                self.active_tensor[i] = self.active_tensor[i] * 0.7 + val * 0.3;
+            }
+        }
+        
+        // Update coherence after integration
+        self.update_coherence();
+    }
+    
+    /// Update coherence score based on model agreement
+    pub fn update_coherence(&mut self) {
+        if self.model_contributions.len() < 2 {
+            self.coherence_score = 0.0;
+            return;
+        }
+        
+        // Calculate pairwise similarity between model contributions
+        let contributions: Vec<&Vec<f32>> = self.model_contributions.values().collect();
+        let mut total_similarity = 0.0;
+        let mut pair_count = 0;
+        
+        for i in 0..contributions.len() {
+            for j in (i + 1)..contributions.len() {
+                if contributions[i].len() == contributions[j].len() {
+                    // Cosine similarity
+                    let dot: f32 = contributions[i].iter().zip(contributions[j].iter())
+                        .map(|(a, b)| a * b).sum();
+                    let mag_a: f32 = contributions[i].iter().map(|x| x * x).sum::<f32>().sqrt();
+                    let mag_b: f32 = contributions[j].iter().map(|x| x * x).sum::<f32>().sqrt();
+                    
+                    if mag_a > 0.0 && mag_b > 0.0 {
+                        let similarity = dot / (mag_a * mag_b);
+                        total_similarity += (similarity + 1.0) / 2.0; // Normalize to 0-1
+                        pair_count += 1;
+                    }
+                }
+            }
+        }
+        
+        self.coherence_score = if pair_count > 0 {
+            (total_similarity / pair_count as f32).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        
+        // Update entropy (higher with more diverse contributions)
+        let tensor_magnitude: f32 = self.active_tensor.iter().map(|x| x * x).sum::<f32>().sqrt();
+        self.entropy = (tensor_magnitude / (self.active_tensor.len() as f32).sqrt()).clamp(0.0, 1.0);
+    }
+    
+    /// Convert current workspace state to context string for next model
+    pub fn to_context(&self) -> String {
+        let mut context = String::new();
+        
+        // Original input
+        context.push_str(&format!("Original Query: {}\n\n", self.original_input));
+        
+        // Current woven state
+        if !self.woven_text.is_empty() {
+            context.push_str(&format!("Current Thought (Round {}): {}\n\n", self.round, self.woven_text));
+        }
+        
+        // Cognitive metrics
+        context.push_str(&format!(
+            "Workspace State: Coherence={:.3}, Entropy={:.3}, Models={}\n",
+            self.coherence_score,
+            self.entropy,
+            self.model_contributions.len()
+        ));
+        
+        context
+    }
+    
+    /// Extract final integrated thought from workspace
+    pub fn extract_final_thought(&self) -> String {
+        if self.woven_text.is_empty() {
+            // Fallback: describe the tensor state
+            format!(
+                "Thought coherence: {:.2}. {} models contributed to this integrated response.",
+                self.coherence_score,
+                self.model_contributions.len()
+            )
+        } else {
+            self.woven_text.clone()
+        }
+    }
+    
+    /// Update woven text with new model output
+    pub fn update_woven_text(&mut self, text: String) {
+        self.woven_text = text;
     }
 }
 

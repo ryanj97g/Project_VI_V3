@@ -5,25 +5,54 @@ use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
+    #[serde(default = "default_ollama_url")]
     pub ollama_url: String,
+    #[serde(default = "default_background_pulse")]
     pub background_pulse_interval: u64,
+    #[serde(default = "default_valence_threshold")]
     pub emotional_valence_threshold: f32,
+    #[serde(default = "default_eval_days")]
     pub existential_evaluation_days: i64,
+    #[serde(default = "default_wellness_days")]
     pub weekly_wellness_check_days: i64,
+    #[serde(default = "default_backup_days")]
     pub memory_backup_interval_days: i64,
+    #[serde(default = "default_compression")]
     pub memory_compression_threshold: usize,
+    
+    // V4 Fractal Weaving (Experimental)
+    #[serde(default)]
+    pub enable_fractal_weaving: bool,
+    #[serde(default = "default_weaving_rounds")]
+    pub weaving_rounds: u32,
+    #[serde(default = "default_coherence_threshold")]
+    pub workspace_coherence_threshold: f32,
 }
+
+// Serde defaults for new config structure
+fn default_ollama_url() -> String { "http://localhost:11434".to_string() }
+fn default_background_pulse() -> u64 { 30 }
+fn default_valence_threshold() -> f32 { -0.2 }
+fn default_eval_days() -> i64 { 90 }
+fn default_wellness_days() -> i64 { 7 }
+fn default_backup_days() -> i64 { 7 }
+fn default_compression() -> usize { 1000 }
+fn default_weaving_rounds() -> u32 { 3 }
+fn default_coherence_threshold() -> f32 { 0.7 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            ollama_url: "http://localhost:11434".to_string(),
-            background_pulse_interval: 30,
-            emotional_valence_threshold: -0.2,
-            existential_evaluation_days: 90,
-            weekly_wellness_check_days: 7,
-            memory_backup_interval_days: 7,
-            memory_compression_threshold: 1000,
+            ollama_url: default_ollama_url(),
+            background_pulse_interval: default_background_pulse(),
+            emotional_valence_threshold: default_valence_threshold(),
+            existential_evaluation_days: default_eval_days(),
+            weekly_wellness_check_days: default_wellness_days(),
+            memory_backup_interval_days: default_backup_days(),
+            memory_compression_threshold: default_compression(),
+            enable_fractal_weaving: false,
+            weaving_rounds: default_weaving_rounds(),
+            workspace_coherence_threshold: default_coherence_threshold(),
         }
     }
 }
@@ -74,6 +103,18 @@ impl Config {
         if self.memory_compression_threshold < 100 {
             anyhow::bail!("memory_compression_threshold must be >= 100");
         }
+        
+        // V4 Fractal Weaving validation
+        if self.weaving_rounds == 0 {
+            anyhow::bail!("weaving_rounds must be > 0");
+        }
+        if self.weaving_rounds > 10 {
+            anyhow::bail!("weaving_rounds must be <= 10 (too many rounds may cause instability)");
+        }
+        if !(0.0..=1.0).contains(&self.workspace_coherence_threshold) {
+            anyhow::bail!("workspace_coherence_threshold must be between 0.0 and 1.0");
+        }
+        
         Ok(())
     }
 }

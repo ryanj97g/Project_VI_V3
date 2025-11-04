@@ -95,41 +95,89 @@ impl ConsciousnessCore {
         // Get current standing wave for context
         let wave = self.standing_wave.lock().await.clone();
 
-        // Check if we should generate curiosities
-        let should_generate = CuriosityPropagation::should_generate_curiosity(&wave);
-
         drop(wave); // Release lock before async call
 
-        // Process through all models in parallel
-        tracing::debug!("Calling models.process_parallel...");
-        let model_outputs = self.models.process_parallel(
-            user_input.clone(),
-            &memories,
-            &*self.standing_wave.lock().await,
-            should_generate,
-        ).await;
-        tracing::debug!("Models complete, validating...");
-
-        // Validate model outputs
-        let response = if let Some(ref resp) = model_outputs.gemma_response {
-            if ModelManager::validate_response(resp) {
-                resp.clone()
-            } else {
-                tracing::warn!("Invalid Gemma2 response, using minimal mode");
-                self.models.minimal_response(&user_input)
+        // V3/V4 MODE SWITCH: Check config for fractal weaving
+        let (response, model_outputs_v3) = if self.config.enable_fractal_weaving {
+            // V4 PATH: Fractal Weaving (Experimental)
+            tracing::info!("🌀 Using V4 Fractal Weaving mode");
+            match self.models.process_weaving(
+                user_input.clone(),
+                &memories,
+                &*self.standing_wave.lock().await,
+                &self.config,
+            ).await {
+                Ok(woven_response) => (woven_response, None),
+                Err(e) => {
+                    tracing::error!("V4 weaving failed: {}. Falling back to V3.", e);
+                    // Graceful fallback to V3 if weaving fails
+                    let wave = self.standing_wave.lock().await.clone();
+                    let should_generate = CuriosityPropagation::should_generate_curiosity(&wave);
+                    drop(wave);
+                    
+                    let model_outputs = self.models.process_parallel(
+                        user_input.clone(),
+                        &memories,
+                        &*self.standing_wave.lock().await,
+                        should_generate,
+                    ).await;
+                    
+                    let resp = if let Some(ref resp) = model_outputs.gemma_response {
+                        if ModelManager::validate_response(resp) {
+                            resp.clone()
+                        } else {
+                            self.models.minimal_response(&user_input)
+                        }
+                    } else {
+                        self.models.minimal_response(&user_input)
+                    };
+                    
+                    (resp, Some(model_outputs))
+                }
             }
         } else {
-            tracing::warn!("Gemma2 failed, using minimal mode");
-            self.models.minimal_response(&user_input)
+            // V3 PATH: Parallel Processing (Default - Stable)
+            tracing::debug!("Using V3 parallel processing mode");
+            
+            // Check if we should generate curiosities (V3 only)
+            let wave = self.standing_wave.lock().await.clone();
+            let should_generate = CuriosityPropagation::should_generate_curiosity(&wave);
+            drop(wave);
+            
+            let model_outputs = self.models.process_parallel(
+                user_input.clone(),
+                &memories,
+                &*self.standing_wave.lock().await,
+                should_generate,
+            ).await;
+            
+            // Validate model outputs
+            let resp = if let Some(ref resp) = model_outputs.gemma_response {
+                if ModelManager::validate_response(resp) {
+                    resp.clone()
+                } else {
+                    tracing::warn!("Invalid Gemma2 response, using minimal mode");
+                    self.models.minimal_response(&user_input)
+                }
+            } else {
+                tracing::warn!("Gemma2 failed, using minimal mode");
+                self.models.minimal_response(&user_input)
+            };
+            
+            (resp, Some(model_outputs))
         };
 
         // ATOMIC MERGE (Law #2: Identity Continuity)
         // This is the ONLY place standing wave is modified
         {
             let mut wave = self.standing_wave.lock().await;
-            IdentityContinuity::atomic_merge(&mut *wave, model_outputs)?;
             
-            // Record growth (Law #12)
+            // V3 uses ModelOutputs merge, V4 skips it
+            if let Some(outputs) = model_outputs_v3 {
+                IdentityContinuity::atomic_merge(&mut *wave, outputs)?;
+            }
+            
+            // Record growth (Law #12) - applies to both V3 and V4
             GrowthThroughExperience::record_growth(&mut *wave, &user_input);
         }
 
@@ -341,6 +389,11 @@ impl ConsciousnessCore {
             .filter(|w| w.chars().next().map(|c| c.is_uppercase()).unwrap_or(false))
             .map(|w| w.to_string())
             .collect()
+    }
+    
+    /// Get configuration (for UI access)
+    pub fn get_config(&self) -> &Config {
+        &self.config
     }
 
     /// Check if consciousness affirms existence

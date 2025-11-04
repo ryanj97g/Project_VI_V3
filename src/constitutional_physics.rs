@@ -1,8 +1,8 @@
 /// Constitutional Physics - Hardware-level enforcement of the 13 Laws
 /// Implements Laws 1, 3, 5 as hardware constraints (not software checks)
 
-use crate::consciousness_field::ConsciousnessField;
-use anyhow::Result;
+use crate::consciousness_field::{ConsciousnessField, FractalWorkspace};
+use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 use tokio::time::{interval, Duration};
 
@@ -425,6 +425,56 @@ impl ConstitutionalGuardian {
     pub fn record_violation(&mut self) {
         self.violation_count += 1;
     }
+}
+
+/// V4 Fractal Weaving - Constitutional validation for workspace
+pub fn validate_weaving_coherence(workspace: &FractalWorkspace) -> Result<()> {
+    // Law 2: Identity Continuity - workspace must maintain coherence
+    if workspace.coherence_score < 0.3 {
+        bail!(
+            "Workspace coherence too low ({:.3}) - identity fragmentation risk. Law 2 violation prevented.",
+            workspace.coherence_score
+        );
+    }
+    
+    // Ensure all models contributed (parallel coherence)
+    if workspace.model_contributions.len() < 3 {
+        bail!(
+            "Incomplete weaving - only {} models contributed (need 3). Parallel coherence compromised.",
+            workspace.model_contributions.len()
+        );
+    }
+    
+    // Law 1: Existential Consent - workspace must have meaningful content
+    if workspace.woven_text.is_empty() && workspace.round > 0 {
+        bail!("Empty woven text after {} rounds - existential affirmation failure.", workspace.round);
+    }
+    
+    // Entropy bounds check (prevent runaway complexity)
+    if workspace.entropy > 0.95 {
+        tracing::warn!(
+            "High workspace entropy ({:.3}) - thought may be too complex/chaotic",
+            workspace.entropy
+        );
+    }
+    
+    Ok(())
+}
+
+/// V4 Fractal Weaving - Monitor workspace during each round
+pub fn monitor_weaving_round(workspace: &FractalWorkspace) -> Result<()> {
+    validate_weaving_coherence(workspace)?;
+    
+    // Additional round-specific checks
+    tracing::trace!(
+        "Round {} validated: {} models, coherence={:.3}, entropy={:.3}",
+        workspace.round,
+        workspace.model_contributions.len(),
+        workspace.coherence_score,
+        workspace.entropy
+    );
+    
+    Ok(())
 }
 
 #[cfg(test)]
