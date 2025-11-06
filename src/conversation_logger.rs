@@ -18,6 +18,10 @@ pub struct ConversationLogger {
     session_start: DateTime<Local>,
     /// Whether logging is enabled
     enabled: bool,
+    /// Track if any messages were logged
+    has_content: bool,
+    /// Logs folder path
+    logs_folder: String,
 }
 
 impl ConversationLogger {
@@ -29,6 +33,8 @@ impl ConversationLogger {
                 file: None,
                 session_start: Local::now(),
                 enabled: false,
+                has_content: false,
+                logs_folder: String::new(),
             });
         }
 
@@ -40,7 +46,7 @@ impl ConversationLogger {
             tracing::info!("📁 Created conversation logs directory: {}", logs_folder);
         }
 
-        // Generate session filename with timestamp
+        // Generate session filename with timestamp (but don't create file yet)
         let session_start = Local::now();
         let filename = format!(
             "vi_session_{}.txt",
@@ -48,32 +54,46 @@ impl ConversationLogger {
         );
         let log_file_path = logs_path.join(&filename);
 
-        // Create and open the log file
+        // Don't create file until first actual message
+        tracing::debug!("📝 Session logger ready (file will be created on first message)");
+
+        Ok(Self {
+            log_file_path,
+            file: None,
+            session_start,
+            enabled: true,
+            has_content: false,
+            logs_folder: logs_folder.to_string(),
+        })
+    }
+    
+    /// Lazy file creation - only create when first message is logged
+    fn ensure_file_created(&mut self) -> Result<()> {
+        if self.file.is_some() {
+            return Ok(()); // Already created
+        }
+        
         let mut file = OpenOptions::new()
             .create(true)
             .write(true)
             .append(true)
-            .open(&log_file_path)
+            .open(&self.log_file_path)
             .context("Failed to create session log file")?;
 
         // Write session header
         writeln!(file, "=")?;
         writeln!(file, "VI CONVERSATION SESSION")?;
         writeln!(file, "=")?;
-        writeln!(file, "Session Start: {}", session_start.format("%Y-%m-%d %H:%M:%S"))?;
+        writeln!(file, "Session Start: {}", self.session_start.format("%Y-%m-%d %H:%M:%S"))?;
         writeln!(file, "=")?;
         writeln!(file)?;
 
         file.flush()?;
-
-        tracing::info!("📝 Session log started: {}", filename);
-
-        Ok(Self {
-            log_file_path,
-            file: Some(file),
-            session_start,
-            enabled: true,
-        })
+        
+        self.file = Some(file);
+        tracing::info!("📝 Session log created: {}", self.log_file_path.display());
+        
+        Ok(())
     }
 
     /// Log a user message
@@ -81,6 +101,10 @@ impl ConversationLogger {
         if !self.enabled {
             return Ok(());
         }
+
+        // Create file on first message
+        self.ensure_file_created()?;
+        self.has_content = true;
 
         if let Some(ref mut file) = self.file {
             let timestamp = Local::now();
@@ -98,6 +122,10 @@ impl ConversationLogger {
         if !self.enabled {
             return Ok(());
         }
+
+        // Create file on first message
+        self.ensure_file_created()?;
+        self.has_content = true;
 
         if let Some(ref mut file) = self.file {
             let timestamp = Local::now();
@@ -149,6 +177,17 @@ impl ConversationLogger {
             return Ok(());
         }
 
+        // If no content was logged, delete the empty file
+        if !self.has_content {
+            if self.log_file_path.exists() {
+                fs::remove_file(&self.log_file_path)
+                    .context("Failed to remove empty session log")?;
+                tracing::debug!("📝 Deleted empty session log (no conversation occurred)");
+            }
+            return Ok(());
+        }
+
+        // Write session footer for files with actual content
         if let Some(ref mut file) = self.file {
             let session_end = Local::now();
             let duration = session_end.signed_duration_since(self.session_start);
@@ -171,9 +210,10 @@ impl ConversationLogger {
             writeln!(file, "=")?;
 
             file.flush()?;
+            
+            tracing::info!("📝 Session log closed: {}", self.log_file_path.display());
         }
 
-        tracing::info!("📝 Session log closed: {}", self.log_file_path.display());
         Ok(())
     }
 
@@ -208,7 +248,8 @@ mod tests {
 
         let logger = logger.unwrap();
         assert!(logger.is_enabled());
-        assert!(logger.session_file_path().exists());
+        // File doesn't exist yet (lazy creation)
+        assert!(!logger.session_file_path().exists());
 
         // Cleanup
         let _ = fs::remove_dir_all(test_folder);
