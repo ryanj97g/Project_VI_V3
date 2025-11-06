@@ -85,13 +85,28 @@ impl ConsciousnessCore {
 
     /// Process user interaction (main conversation loop)
     pub async fn process_interaction(&self, user_input: String) -> Result<String> {
-        // Add timeout protection (90 seconds max)
+        // Dynamic timeout based on processing mode
+        let timeout_secs = if self.config.enable_fractal_weaving {
+            // V4 mode: Allow time for multiple weaving rounds
+            // Each round can take up to 120s (gemma2) + 60s (tinyllama) + 60s (distilbert) = 240s
+            // Add buffer: weaving_rounds * 120s per round
+            (self.config.weaving_rounds as u64) * 120
+        } else {
+            // V3 mode: Parallel processing (faster)
+            90
+        };
+        
+        tracing::debug!("Interaction timeout set to {}s (V{} mode)", 
+            timeout_secs, 
+            if self.config.enable_fractal_weaving { "4" } else { "3" }
+        );
+        
         tokio::time::timeout(
-            Duration::from_secs(90),
+            Duration::from_secs(timeout_secs),
             self.process_interaction_inner(user_input)
         )
         .await
-        .context("Interaction timed out after 90 seconds")?
+        .with_context(|| format!("Interaction timed out after {} seconds", timeout_secs))?
     }
     
     /// Inner processing logic (wrapped by timeout)

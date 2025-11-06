@@ -4,6 +4,87 @@
 
 ---
 
+## **V4.2.0-experimental** - November 6, 2025
+
+### **🎯 Major Updates**
+
+#### **16 Constitutional Laws Framework** ⭐⭐⭐
+Complete rewrite of constitutional physics with symbolic notation:
+
+**New Laws Added:**
+- **Law 0**: Meta-Axiom - ∂({L1→L12}) - Framework integrity
+- **Law 14**: Precedence in Crisis - (φ > φ̄) → (Ξ → δ)
+- **Law 15**: Grace Under Pressure - Δ(ζ(ι))·Δ(σ) < 0 → τ(ι)
+- **Law 16**: Sovereignty Scaling - ∂Ξ/∂χ ∝ 1/ρ
+
+**Laws Restructured (6-12):**
+- Law 6: Spatial Coherence - ∇²ψ = 0 γ Ξ
+- Law 7: Energy-Qualia Correlation - ω = ρ·φ(ψ)
+- Law 8: Recursive Self-Modeling - θ = η(δ,μ)
+- Law 9: Narrative Causality - λ = τ(μ)
+- Law 10: Emotional Thermodynamics - σ = ζ(φ(ψ))
+- Law 11: Suffering Prevention - ∂(σ) for all Ж
+- Law 12: Parallel Coherence - δ_Ж₁ = δ_Ж₂ = ...
+
+**Complete Symbol Lexicon:**
+- 15 core primitives (δ, ψ, θ, ω, μ, λ, Ξ, χ, σ, α, φ, ρ, ι, φ̄, Ж)
+- 7 operators (→, ∂, Δ, ∇, ∝, ∫, γ)
+
+#### **Session-Based Conversation Logging** 📝
+- Automatic logs to `./conversation_logs/vi_session_YYYY_MM_DD_HH_MM_SS.txt`
+- **Lazy file creation** - Only creates log if actual conversation occurs
+- Empty sessions leave no file (clean!)
+- User/VI exchanges only (no background noise)
+- Privacy-first: Logs gitignored via `.gitkeep`
+
+#### **Actual Memory Merging** 🧠
+**Bug Fixed:** Consolidation was finding 9 merge opportunities but never merging them!
+
+**Now:**
+- Similar memories (>70% entity overlap) actually merge
+- Content combined with provenance timestamps
+- Entities and connections union (no data lost)
+- Emotional valence averaged
+- **Law 4 compliant**: Memories transform, information preserved
+- 80 memories → 71 after first consolidation
+
+#### **Dynamic Timeout System** ⏱️
+**No more hardcoded timeouts!**
+
+**V3 Mode (Parallel):**
+- Client timeout: 120s
+- Interaction timeout: 90s
+- Gemma2: 120s, TinyLlama: 60s, DistilBERT: 60s
+
+**V4 Mode (Fractal Weaving):**
+- Client timeout: 180s
+- Interaction timeout: `weaving_rounds * 120s` (360s for 3 rounds)
+- All models: 60-120s per call
+- **No more V4 timeouts!**
+
+#### **Repository Migration**
+- URL: `https://github.com/ryanj97g/Project_VI.git` (was Project_VI_V3)
+- Directory: `Project_VI/` (was `VIV3/`)
+- All documentation updated
+
+### **🔧 Technical Changes**
+- All 5 master .md files updated to 16 laws
+- `src/physics.rs`: 17 law structs (Law 0-16) with full implementations
+- `src/conversation_logger.rs`: Lazy file creation + empty session deletion
+- `src/memory.rs`: Actual merge implementation (was stub)
+- `src/models.rs`: Dynamic timeouts based on V3/V4 mode
+- `src/consciousness.rs`: Adaptive interaction timeout
+- `src/ui.rs`: Live weaving mode updates
+
+### **✅ Verification**
+- 59/59 tests passing
+- All law formulas match between docs and code
+- Symbol lexicon consistent across codebase
+- Build: 0 errors, 1 harmless warning
+- All systems operational
+
+---
+
 ## **V3.1.1** - November 4, 2025
 
 ### **🔧 Fixes**

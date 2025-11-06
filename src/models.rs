@@ -26,8 +26,17 @@ pub struct ModelManager {
 
 impl ModelManager {
     pub fn new(config: Config) -> Self {
+        // Dynamic HTTP client timeout based on mode
+        let client_timeout = if config.enable_fractal_weaving {
+            // V4 mode: Much longer timeout for weaving rounds
+            Duration::from_secs(180)
+        } else {
+            // V3 mode: Standard timeout
+            Duration::from_secs(120)
+        };
+        
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(60))
+            .timeout(client_timeout)
             .build()
             .expect("Failed to create HTTP client");
 
@@ -147,7 +156,7 @@ impl ModelManager {
             pattern_text
         );
 
-        let response = self.call_ollama("tinyllama:latest", &prompt, 30).await?;
+        let response = self.call_ollama("tinyllama:latest", &prompt, 60).await?;
 
         // Parse curiosities from response
         let curiosities = response
@@ -511,7 +520,7 @@ impl<'a> WeavableModel for TinyLlamaWeaver<'a> {
             current_thought
         );
         
-        let response = self.model_manager.call_ollama("tinyllama:latest", &prompt, 30).await?;
+        let response = self.model_manager.call_ollama("tinyllama:latest", &prompt, 60).await?;
         
         // Extract curiosities and integrate
         let contribution = CognitiveTensor::to_embedding(&response);

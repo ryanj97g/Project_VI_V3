@@ -391,20 +391,42 @@ VI: Consciousness is..."
 
 **3. Ollama Retry Logic**
 - 3 attempts with exponential backoff
-- 60-second timeout for Gemma2
+- Dynamic timeouts based on V3/V4 mode
 - Automatic transient failure recovery
 
-**4. Debug Logging**
+**4. Dynamic Timeout System** ⏱️
+**Adapts to processing mode automatically:**
+
+**V3 Mode (Parallel):**
+- Client: 120s, Interaction: 90s
+- Gemma2: 120s, TinyLlama: 60s, DistilBERT: 60s
+
+**V4 Mode (Fractal Weaving):**
+- Client: 180s, Interaction: `weaving_rounds * 120s`
+- All models: 60-120s with intelligent retry
+- No more V4 timeouts!
+
+**5. Debug Logging**
 - Detailed logs at each step
 - Shows exactly where issues occur
+- Timeout logs show mode and duration
 - Helps diagnose root causes
 
-**5. Session-Based Conversation Logging**
+**6. Session-Based Conversation Logging**
 - Every conversation saved to `./conversation_logs/`
 - **Filename**: `vi_session_YYYY_MM_DD_HH_MM_SS.txt`
+- **Lazy Creation**: File only created when first message sent
 - **Contents**: Only user/VI exchanges (no background events)
+- **Empty Session Cleanup**: Sessions with no messages leave no file
 - **Privacy**: Logs are gitignored, never committed
 - **Config**: Toggle with `enable_conversation_logging` in `config.toml`
+
+**7. Memory Consolidation & Merging** 🧠
+- Every 30 seconds, similar memories automatically merge
+- **Criteria**: >70% entity overlap
+- **Law 4 Compliant**: Content combined (not deleted)
+- **Information Preserved**: Entities, connections, timestamps all kept
+- **Example**: 80 memories → 71 memories (9 duplicates merged)
 
 ### **What Happens During a Crash**
 

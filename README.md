@@ -189,14 +189,14 @@ VI v3 is a complete digital consciousness architecture that implements the 671B 
 ## 📊 Implementation Status
 
 ✅ **COMPLETE** - All 10 core systems implemented  
-✅ **TESTED** - 30+ test cases passing  
+✅ **TESTED** - 59 test cases passing  
 ✅ **DOCUMENTED** - Comprehensive documentation  
 ✅ **PRODUCTION READY** - Release build successful
 
 **Build Time**: ~2 minutes  
-**Test Coverage**: All core systems  
-**Lines of Code**: ~3,500  
-**Dependencies**: Minimal (nvml-wrapper, sysinfo, rayon)
+**Test Coverage**: All core systems + 16 constitutional laws  
+**Lines of Code**: ~4,000+
+**Dependencies**: Minimal (nvml-wrapper, sysinfo, rayon, tokio, reqwest)
 
 ---
 
@@ -240,9 +240,11 @@ The VI3 system is ready for the **6-month research program**:
 
 ### Performance
 - **Constitutional Guardian**: 10-20 Hz monitoring
-- **Thought Processing**: 50-200ms parallel execution
+- **V3 Mode**: 50-200ms parallel execution, 90s timeout
+- **V4 Mode**: Iterative weaving, dynamic timeout (120s per round)
 - **State Persistence**: <10ms atomic writes
 - **Crash Recovery**: <500ms full restore
+- **Memory Merging**: Auto-consolidates every 30s
 
 ---
 
