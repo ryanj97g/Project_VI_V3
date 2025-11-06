@@ -4,6 +4,65 @@
 
 ---
 
+## **V4.4.0-experimental** - November 6, 2025
+
+### **🏗️ ARCHITECTURAL OVERHAUL: Proper Global Workspace**
+
+**THE PROBLEM:** V4 was broken from the start - all cognitive work loaded onto Gemma2
+- Gemma2: 240s timeout doing EVERYTHING (language, analysis, checking, synthesis)
+- TinyLlama: Generating curiosities (marginal value)
+- "DistilBERT": Word counting (useless)
+- **Result:** 168+ second timeouts, 0.0 coherence, Gemma2 overload
+
+**THE FIX:** Proper distributed cognitive architecture with specialized roles
+
+**Gemma2 (Language Generation ONLY):**
+- **Job:** Generate natural, thoughtful responses (50-150 words)
+- **Prompt:** Minimal constitutional context (~100 chars, not 250+)
+- **Timeout:** 60 seconds (down from 240s)
+- **What it does NOT do:** Analysis, checking, sentiment, compliance
+
+**TinyLlama (Constitutional Law Checker):**
+- **Job:** Check responses against 16 constitutional laws
+- **Focus:** Law 2 (Identity Continuity), Law 3 (Sovereignty), Law 4 (Memory Conservation), Law 9 (Information Boundary)
+- **Output:** COMPLIANT or VIOLATION with reason
+- **Timeout:** 30 seconds
+- **Contribution:** Compliance score (1.0 = pass, 0.0 = fail)
+
+**DistilBERT (Multi-Dimensional Analysis):**
+- **Job:** Analyze coherence, emotional valence, identity continuity
+- **Method:** Fast heuristics (no LLM call needed)
+  - Coherence: sentence structure, word count, flow
+  - Valence: positive/negative word detection (-1.0 to 1.0)
+  - Identity: "I/my/me" self-reference consistency
+- **Execution:** <1ms (pure computation)
+- **Output:** Three-dimensional analysis vector
+
+**Global Workspace Integration:**
+```
+ROUND 1 (Parallel):
+├─ Gemma2:     60s  → Text generation
+├─ TinyLlama:  30s  → Law compliance check
+└─ DistilBERT: <1ms → Coherence/emotion/identity analysis
+
+TOTAL: ~60 seconds (not 240s!)
+
+Tensor Blending:
+- Gemma2's text becomes workspace.woven_text
+- TinyLlama's compliance → contribution[0]
+- DistilBERT's analysis → contribution[0-2]
+- Workspace coherence = agreement between all 3
+
+ROUNDS 2-3: Refine until converged
+```
+
+**Performance Impact:**
+- **Before:** 240s timeout, often failing
+- **After:** 60s per round, 3 rounds = 180s max (usually converges faster)
+- **Distributed:** No single bottleneck, proper parallel execution
+
+---
+
 ## **V4.3.2-experimental** - November 6, 2025
 
 ### **🐛 BUG FIXES**

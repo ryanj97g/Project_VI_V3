@@ -159,7 +159,7 @@ impl ConsciousnessCore {
         let (response, model_outputs_v3) = if self.config.enable_fractal_weaving {
             // V4 PATH: Fractal Weaving (Experimental)
             tracing::info!("🌀 Using V4 Fractal Weaving mode");
-            self.send_status("🌀 V4 Fractal Weaving initiated...").await;
+            // Phase messages will handle UI updates (don't set processing_status here)
             
             // Log processing mode
             {
