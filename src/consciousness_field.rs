@@ -412,6 +412,8 @@ pub struct FractalWorkspace {
     pub original_input: String,
     /// Accumulated text from all models
     pub woven_text: String,
+    /// Model-specific text contribution
+    pub model_text: String,
 }
 
 impl FractalWorkspace {
@@ -425,6 +427,21 @@ impl FractalWorkspace {
             round: 0,
             original_input: input.to_string(),
             woven_text: String::new(),
+            model_text: String::new(),
+        }
+    }
+    
+    /// Extract this model's contribution (for parallel merging)
+    pub fn extract_contribution(&self) -> Vec<f32> {
+        self.active_tensor.clone()
+    }
+    
+    /// Get workspace context for models to see
+    pub fn get_shared_context(&self) -> String {
+        if self.woven_text.is_empty() {
+            self.original_input.clone()
+        } else {
+            self.woven_text.clone()
         }
     }
     

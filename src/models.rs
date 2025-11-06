@@ -390,13 +390,13 @@ impl ModelManager {
         let tinyllama_weaver = TinyLlamaWeaver::new(self, recalled_memories);
         let distilbert_weaver = DistilBERTWeaver::new(self);
         
-        // Iterative rounds
+        // Iterative rounds - TRUE PARALLEL GLOBAL WORKSPACE
         for round in 0..config.weaving_rounds {
             workspace.round = round;
             
             // Send status update to UI
             if let Some(sender) = &*status_sender.lock().await {
-                let _ = sender.send(format!("🌀 Round {}/{}...", round + 1, config.weaving_rounds));
+                let _ = sender.send(format!("🌀 Round {}/{} - All models weaving in parallel...", round + 1, config.weaving_rounds));
             }
             
             tracing::debug!(
@@ -407,26 +407,36 @@ impl ModelManager {
                 workspace.entropy
             );
             
-            // Sequential weaving: Gemma2 -> TinyLlama -> DistilBERT
-            if let Some(sender) = &*status_sender.lock().await {
-                let _ = sender.send(format!("🌀 Round {}/{} - Gemma2 refining...", round + 1, config.weaving_rounds));
-            }
-            gemma_weaver.weave(&mut workspace).await?;
+            // PARALLEL WEAVING: All 3 models work simultaneously on shared cognitive field
+            // Each gets a copy of the workspace to prevent race conditions
+            let mut ws_gemma = workspace.clone();
+            let mut ws_tiny = workspace.clone();
+            let mut ws_distil = workspace.clone();
             
-            if let Some(sender) = &*status_sender.lock().await {
-                let _ = sender.send(format!("🌀 Round {}/{} - TinyLlama adding depth...", round + 1, config.weaving_rounds));
-            }
-            tinyllama_weaver.weave(&mut workspace).await?;
+            // All three minds work on the same thought simultaneously!
+            let (gemma_result, tiny_result, distil_result) = tokio::join!(
+                gemma_weaver.weave(&mut ws_gemma),
+                tinyllama_weaver.weave(&mut ws_tiny),
+                distilbert_weaver.weave(&mut ws_distil)
+            );
             
-            if let Some(sender) = &*status_sender.lock().await {
-                let _ = sender.send(format!("🌀 Round {}/{} - DistilBERT coherence check...", round + 1, config.weaving_rounds));
-            }
-            distilbert_weaver.weave(&mut workspace).await?;
+            // Check for errors
+            gemma_result?;
+            tiny_result?;
+            distil_result?;
+            
+            // GLOBAL WORKSPACE MERGE: Blend all 3 contributions via tensor interference
+            workspace.integrate_contribution("gemma2", ws_gemma.extract_contribution());
+            workspace.integrate_contribution("tinyllama", ws_tiny.extract_contribution());
+            workspace.integrate_contribution("distilbert", ws_distil.extract_contribution());
+            
+            // Text integration: Gemma2's language is primary, others influence via tensor
+            workspace.update_woven_text(ws_gemma.model_text);
             
             // Constitutional validation after each round
             validate_weaving_coherence(&workspace)?;
             
-            // Check for convergence
+            // Check for convergence (coherence = agreement between all 3 models)
             if workspace.coherence_score >= config.workspace_coherence_threshold {
                 tracing::info!(
                     "✅ Thought converged at round {} (coherence: {:.3})",
@@ -434,7 +444,7 @@ impl ModelManager {
                     workspace.coherence_score
                 );
                 if let Some(sender) = &*status_sender.lock().await {
-                    let _ = sender.send(format!("✅ Converged (coherence: {:.3})", workspace.coherence_score));
+                    let _ = sender.send(format!("✅ Converged - 3 minds unified (coherence: {:.3})", workspace.coherence_score));
                 }
                 break;
             }
@@ -503,10 +513,10 @@ impl<'a> WeavableModel for Gemma2Weaver<'a> {
         let response = self.model_manager.call_ollama("gemma2:2b", &prompt, 120).await?;
         let cleaned = self.model_manager.filter_internal_thoughts(&response);
         
-        // Update workspace
+        // Update workspace with this model's contribution
         let contribution = CognitiveTensor::to_embedding(&cleaned);
-        workspace.integrate_contribution("gemma2", contribution);
-        workspace.update_woven_text(cleaned);
+        workspace.active_tensor = contribution;
+        workspace.model_text = cleaned;
         
         Ok(())
     }
@@ -544,9 +554,10 @@ impl<'a> WeavableModel for TinyLlamaWeaver<'a> {
         
         let response = self.model_manager.call_ollama("tinyllama:latest", &prompt, 60).await?;
         
-        // Extract curiosities and integrate
+        // Store curiosity contribution as tensor
         let contribution = CognitiveTensor::to_embedding(&response);
-        workspace.integrate_contribution("tinyllama", contribution);
+        workspace.active_tensor = contribution;
+        workspace.model_text = response;
         
         Ok(())
     }
@@ -621,7 +632,8 @@ impl<'a> WeavableModel for DistilBERTWeaver<'a> {
         let mut contribution = vec![0.0f32; 128];
         contribution[0] = coherence;
         
-        workspace.integrate_contribution("distilbert", contribution);
+        workspace.active_tensor = contribution;
+        workspace.model_text = format!("Coherence: {:.3}", coherence);
         
         Ok(())
     }
