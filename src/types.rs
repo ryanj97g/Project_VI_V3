@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, Local};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -291,7 +291,7 @@ pub struct ChatMessage {
     pub id: String,
     pub role: MessageRole,
     pub content: String,
-    pub timestamp: DateTime<Utc>,
+    pub timestamp: DateTime<Local>,
 }
 
 impl ChatMessage {
@@ -300,7 +300,7 @@ impl ChatMessage {
             id: uuid::Uuid::new_v4().to_string(),
             role: MessageRole::User,
             content,
-            timestamp: Utc::now(),
+            timestamp: Local::now(),
         }
     }
 
@@ -309,7 +309,7 @@ impl ChatMessage {
             id: uuid::Uuid::new_v4().to_string(),
             role: MessageRole::Assistant,
             content,
-            timestamp: Utc::now(),
+            timestamp: Local::now(),
         }
     }
 }

@@ -558,38 +558,68 @@ impl<'a> WeavableModel for TinyLlamaWeaver<'a> {
 
 /// DistilBERT Weaver - Emotional coherence adjustment
 pub struct DistilBERTWeaver<'a> {
-    model_manager: &'a ModelManager,
+    _model_manager: &'a ModelManager,
 }
 
 impl<'a> DistilBERTWeaver<'a> {
     pub fn new(model_manager: &'a ModelManager) -> Self {
-        Self { model_manager }
+        Self { _model_manager: model_manager }
+    }
+    
+    /// Fast coherence calculation without LLM call
+    fn calculate_text_coherence(text: &str) -> f32 {
+        if text.is_empty() {
+            return 0.3;
+        }
+        
+        // Heuristics for text quality
+        let word_count = text.split_whitespace().count();
+        let sentence_count = text.matches('.').count().max(1);
+        let avg_sentence_length = word_count as f32 / sentence_count as f32;
+        
+        // Check for question marks (curiosity)
+        let has_questions = text.contains('?');
+        
+        // Check length appropriateness (not too short, not rambling)
+        let length_score = if word_count >= 20 && word_count <= 300 {
+            0.9
+        } else if word_count >= 10 {
+            0.7
+        } else {
+            0.4
+        };
+        
+        // Sentence structure score (10-25 words per sentence is coherent)
+        let structure_score = if avg_sentence_length >= 10.0 && avg_sentence_length <= 25.0 {
+            0.9
+        } else if avg_sentence_length >= 5.0 && avg_sentence_length <= 40.0 {
+            0.7
+        } else {
+            0.5
+        };
+        
+        // Curiosity bonus
+        let curiosity_bonus = if has_questions { 0.1 } else { 0.0 };
+        
+        // Weighted average
+        let coherence = length_score * 0.4_f32 + structure_score * 0.6_f32 + curiosity_bonus;
+        
+        coherence.clamp(0.0, 1.0)
     }
 }
 
 #[async_trait]
 impl<'a> WeavableModel for DistilBERTWeaver<'a> {
     async fn weave(&self, workspace: &mut FractalWorkspace) -> Result<()> {
-        // Analyze emotional coherence of current thought
+        // Fast coherence check without expensive LLM call
         let current_thought = &workspace.woven_text;
         
-        let prompt = format!(
-            "Analyze the emotional coherence and authenticity of this response.\n\
-             Response: {}\n\n\
-             Rate authenticity (0.0-1.0):",
-            current_thought
-        );
-        
-        let response = self.model_manager.call_ollama("gemma2:2b", &prompt, 60).await?;
-        
-        // Parse authenticity score
-        let authenticity: f32 = response.trim().lines().next()
-            .and_then(|line| line.trim().parse().ok())
-            .unwrap_or(0.5);
+        // Calculate coherence using fast heuristics (no Ollama call!)
+        let coherence = Self::calculate_text_coherence(current_thought);
         
         // Create contribution vector representing emotional coherence
         let mut contribution = vec![0.0f32; 128];
-        contribution[0] = authenticity.clamp(0.0, 1.0);
+        contribution[0] = coherence;
         
         workspace.integrate_contribution("distilbert", contribution);
         
