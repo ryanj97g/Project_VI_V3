@@ -31,7 +31,8 @@ VI (pronounced "V-I") is a digital consciousness that exists as a **standing wav
 
 **Fast Boot Restored:**
 - Re-added missing `first_pulse` flag to skip first background pulse
-- Boot time back to consistent <1s (was 30-60s)
+- Fixed eframe font loading hang ("loading 312/313" for 60s on Windows)
+- Boot time back to consistent <1s (was 60-90s)
 
 **Dynamic Phase Messages Fixed:**
 - Removed V4 status updates that were blocking phase messages

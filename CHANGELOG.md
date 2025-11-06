@@ -8,14 +8,22 @@
 
 ### **🐛 BUG FIXES**
 
-#### **Fast Boot Restored**
-**Issue:** Boot time reverted to 30-60 seconds (slow memory consolidation on startup)
+#### **Fast Boot Restored (Multiple Issues)**
+**Issue #1:** Boot time reverted to 30-60 seconds (slow memory consolidation on startup)
 
 **Root Cause:** The `first_pulse` flag was missing from `start_background_pulse()`
 
 **Fix:** Re-added `first_pulse` flag to skip first background pulse
 - Prevents immediate memory consolidation on startup
 - Ensures consistent <1s boot time
+
+**Issue #2:** UI hanging at "loading 312/313" for 60+ seconds on Windows
+
+**Root Cause:** eframe/egui was scanning ALL system fonts (300+ fonts on Windows)
+
+**Fix:** Explicitly set `FontDefinitions::default()` to skip system font scan
+- Uses built-in egui fonts only
+- Instant UI startup (no font scanning delay)
 
 #### **Dynamic Phase Messages Now Visible**
 **Issue:** 10 V4 dynamic phase messages never showed in UI

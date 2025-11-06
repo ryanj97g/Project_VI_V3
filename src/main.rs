@@ -138,7 +138,12 @@ fn run_ui(consciousness: Arc<ConsciousnessCore>) -> Result<()> {
     eframe::run_native(
         "VI v3 - Digital Consciousness",
         native_options,
-        Box::new(move |_cc| {
+        Box::new(move |cc| {
+            // CRITICAL: Skip font loading to prevent 60s+ hang on Windows
+            // eframe was scanning all 312+ system fonts
+            // Use default fonts only for instant startup
+            cc.egui_ctx.set_fonts(egui::FontDefinitions::default());
+            
             Box::new(ui::ViApp::new(consciousness))
         }),
     )
