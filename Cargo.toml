@@ -30,5 +30,5 @@ winapi = { version = "0.3", features = ["winuser", "windef"] }
 
 [profile.release]
 opt-level = 3
-lto = true
+lto = false  # Disabled for fast builds - enable only for final release
 

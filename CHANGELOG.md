@@ -25,6 +25,14 @@
 - Uses built-in egui fonts only
 - Instant UI startup (no font scanning delay)
 
+**Issue #3:** Cargo build hanging at "312/313: vi3(bin)" for 5-10+ minutes
+
+**Root Cause:** `lto = true` in Cargo.toml causing expensive whole-program Link Time Optimization
+
+**Fix:** Changed to `lto = false` for fast builds
+- 6 minute builds (normal) instead of 10+ minute hangs
+- Re-enable only for final release builds if needed
+
 #### **Dynamic Phase Messages Now Visible**
 **Issue:** 10 V4 dynamic phase messages never showed in UI
 
