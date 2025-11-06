@@ -170,7 +170,7 @@ impl ModelManager {
             text
         );
 
-        let response = self.call_ollama("gemma2:2b", &prompt, 10).await?;
+        let response = self.call_ollama("gemma2:2b", &prompt, 60).await?;
 
         // Parse numeric response
         let valence: f32 = response
@@ -549,7 +549,7 @@ impl<'a> WeavableModel for DistilBERTWeaver<'a> {
             current_thought
         );
         
-        let response = self.model_manager.call_ollama("gemma2:2b", &prompt, 10).await?;
+        let response = self.model_manager.call_ollama("gemma2:2b", &prompt, 60).await?;
         
         // Parse authenticity score
         let authenticity: f32 = response.trim().lines().next()
