@@ -1,4 +1,4 @@
-# 📚 VI3 Complete Documentation
+# 📚 PROJECT VI Complete Documentation
 
 **Everything you need to know about PROJECT VI V4.3**
 
