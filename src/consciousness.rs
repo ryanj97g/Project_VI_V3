@@ -25,6 +25,7 @@ pub struct ConsciousnessCore {
     curiosity_engine: Arc<Mutex<CuriositySearchEngine>>,
     conversation_logger: Arc<Mutex<ConversationLogger>>,
     status_sender: Arc<Mutex<Option<std::sync::mpsc::Sender<String>>>>,
+    coherence_sender: Arc<Mutex<Option<std::sync::mpsc::Sender<f32>>>>,
 }
 
 impl ConsciousnessCore {
@@ -55,12 +56,18 @@ impl ConsciousnessCore {
             curiosity_engine: Arc::new(Mutex::new(curiosity_engine)),
             conversation_logger: Arc::new(Mutex::new(conversation_logger)),
             status_sender: Arc::new(Mutex::new(None)),
+            coherence_sender: Arc::new(Mutex::new(None)),
         }
     }
     
     /// Set status sender for UI updates
     pub async fn set_status_sender(&self, sender: std::sync::mpsc::Sender<String>) {
         *self.status_sender.lock().await = Some(sender);
+    }
+    
+    /// Set coherence sender for UI updates
+    pub async fn set_coherence_sender(&self, sender: std::sync::mpsc::Sender<f32>) {
+        *self.coherence_sender.lock().await = Some(sender);
     }
     
     /// Send status update to UI (non-blocking)
@@ -170,6 +177,7 @@ impl ConsciousnessCore {
                 &*self.standing_wave.lock().await,
                 &self.config,
                 self.status_sender.clone(),
+                self.coherence_sender.clone(),
             ).await {
                 Ok(woven_response) => (woven_response, None),
                 Err(e) => {

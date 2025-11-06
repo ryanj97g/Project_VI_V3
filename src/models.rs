@@ -379,6 +379,7 @@ impl ModelManager {
         standing_wave: &StandingWave,
         config: &Config,
         status_sender: Arc<Mutex<Option<std::sync::mpsc::Sender<String>>>>,
+        coherence_sender: Arc<Mutex<Option<std::sync::mpsc::Sender<f32>>>>,
     ) -> Result<String> {
         tracing::info!("🌀 V4 Fractal Weaving enabled - {} rounds", config.weaving_rounds);
         
@@ -435,6 +436,11 @@ impl ModelManager {
             
             // Constitutional validation after each round
             validate_weaving_coherence(&workspace)?;
+            
+            // Send coherence update to UI
+            if let Some(sender) = &*coherence_sender.lock().await {
+                let _ = sender.send(workspace.coherence_score);
+            }
             
             // Check for convergence (coherence = agreement between all 3 models)
             if workspace.coherence_score >= config.workspace_coherence_threshold {

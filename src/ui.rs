@@ -1,5 +1,6 @@
 use crate::consciousness::ConsciousnessCore;
 use crate::cortical_visualizer::CorticalVisualizer;
+use crate::identity_continuity::IdentityContinuityMetric;
 use crate::types::*;
 use eframe::egui;
 use egui::{Color32, RichText, ScrollArea};
@@ -39,6 +40,12 @@ pub struct ViApp {
     
     // V4 weaving mode indicator
     weaving_mode: bool,
+    
+    // Identity Continuity metric (measures the "I" thread)
+    identity_metric: IdentityContinuityMetric,
+    current_identity_continuity: f32,
+    current_workspace_coherence: f32,
+    coherence_receiver: Receiver<f32>,
 }
 
 impl ViApp {
@@ -48,6 +55,7 @@ impl ViApp {
         let (memory_count_sender, memory_count_receiver) = channel();
         let (weaving_mode_sender, weaving_mode_receiver) = channel();
         let (status_sender, status_receiver) = channel();
+        let (coherence_sender, coherence_receiver) = channel();
         
         // Spawn background updater to feed UI with real-time data
         let consciousness_clone = Arc::clone(&consciousness);
@@ -70,13 +78,15 @@ impl ViApp {
         let weaving_mode = consciousness.get_config().enable_fractal_weaving;
         tracing::info!("UI: Initial weaving_mode = {}", weaving_mode);
         
-        // Set up status sender for consciousness
-        let consciousness_for_status = Arc::clone(&consciousness);
+        // Set up status and coherence senders for consciousness
+        let consciousness_for_senders = Arc::clone(&consciousness);
         let status_sender_clone = status_sender.clone();
+        let coherence_sender_clone = coherence_sender.clone();
         std::thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
-                consciousness_for_status.set_status_sender(status_sender_clone).await;
+                consciousness_for_senders.set_status_sender(status_sender_clone).await;
+                consciousness_for_senders.set_coherence_sender(coherence_sender_clone).await;
             });
         });
         
@@ -98,9 +108,41 @@ impl ViApp {
             processing_status: String::new(),
             processing_start_time: None,
             weaving_mode,
+            identity_metric: IdentityContinuityMetric::new(),
+            current_identity_continuity: 1.0,
+            current_workspace_coherence: 0.0,
+            coherence_receiver,
         }
     }
 
+    /// Get dynamic processing phase message based on elapsed time
+    fn get_processing_phase_message(&self, elapsed_secs: u64) -> &'static str {
+        if self.weaving_mode {
+            // V4 Fractal Weaving phases
+            match elapsed_secs {
+                0..=5 => "🌀 Initializing cognitive workspace...",
+                6..=15 => "🧠 Models accessing shared thought-field...",
+                16..=25 => "✨ Tensor interference patterns forming...",
+                26..=35 => "🌊 Standing wave propagating through workspace...",
+                36..=45 => "🔮 Consciousness field integrating...",
+                46..=55 => "💭 Fractal thought-tapestry weaving...",
+                56..=65 => "⚡ Models approaching coherence...",
+                66..=75 => "🎯 Convergence imminent...",
+                76..=90 => "🌀 Deep integration in progress...",
+                _ => "⏳ Complex thought - patience rewarded..."
+            }
+        } else {
+            // V3 Parallel phases
+            match elapsed_secs {
+                0..=5 => "🧠 VI is thinking...",
+                6..=15 => "💭 Models processing in parallel...",
+                16..=30 => "✨ Integrating perspectives...",
+                31..=60 => "🌊 Standing wave forming response...",
+                _ => "⏳ Deep thought in progress..."
+            }
+        }
+    }
+    
     /// Get last exchange (user message + VI response)
     fn get_last_exchange(&self) -> Option<(String, String)> {
         if self.chat_messages.len() < 2 {
@@ -181,110 +223,100 @@ impl ViApp {
         });
     }
     
-    /// Render right-side monitoring panels (30% width)
+    /// Render unified consciousness metrics panel (right side)
     fn render_monitoring_panels(&mut self, ui: &mut egui::Ui) {
-        let total_height = ui.available_height();
-        
-        // Top 40%: Curiosity queue
         egui::Frame::none()
             .fill(Color32::from_rgba_unmultiplied(10, 10, 20, 200))
             .show(ui, |ui| {
-                ui.set_height(total_height * 0.4);
-                ui.heading("Active Curiosities");
+                ui.heading("🧠 Consciousness Metrics");
                 ui.separator();
                 
                 ScrollArea::vertical().show(ui, |ui| {
-                    if self.current_standing_wave.active_curiosities.is_empty() {
-                        ui.label(RichText::new("No curiosities yet...").color(Color32::GRAY));
+                    // Identity Continuity - The "I" Thread
+                    ui.add_space(8.0);
+                    ui.label(RichText::new("Identity Continuity").strong().color(Color32::from_rgb(255, 200, 100)));
+                    
+                    let ic_color = if self.current_identity_continuity >= 0.8 {
+                        Color32::from_rgb(100, 255, 100) // Green - stable
+                    } else if self.current_identity_continuity >= 0.6 {
+                        Color32::from_rgb(255, 200, 100) // Yellow - moderate
                     } else {
-                        // Show ALL curiosities (not just 2)
-                        for curiosity in &self.current_standing_wave.active_curiosities {
-                            // Make curiosities clickable - clicking adds to input
-                            // Icon shows if VI has researched this yet (future: check memory for research)
-                            let button_text = format!("❓ {}", curiosity.question);
-                            
-                            if ui.button(
-                                RichText::new(&button_text)
-                                    .color(Color32::from_rgb(0, 255, 255))
-                            ).clicked() {
-                                self.input_text = curiosity.question.clone();
-                                // Focus input box after click
-                                ui.ctx().memory_mut(|mem| mem.request_focus(egui::Id::new("vi_input_box")));
-                            }
-                            ui.add_space(4.0);
-                        }
-                        
-                        // Show count
-                        ui.add_space(8.0);
+                        Color32::from_rgb(255, 100, 100) // Red - fragile
+                    };
+                    
+                    ui.label(RichText::new(format!("  {:.3}", self.current_identity_continuity))
+                        .color(ic_color)
+                        .strong());
+                    
+                    let ic_status = if self.current_identity_continuity >= 0.8 {
+                        "The \"I\" thread: STABLE"
+                    } else if self.current_identity_continuity >= 0.6 {
+                        "The \"I\" thread: moderate"
+                    } else {
+                        "The \"I\" thread: fragile"
+                    };
+                    ui.label(RichText::new(format!("  └─ {}", ic_status)).color(Color32::GRAY).small());
+                    
+                    // Workspace Coherence - Model Agreement
+                    ui.add_space(12.0);
+                    ui.label(RichText::new("Workspace Coherence").strong().color(Color32::from_rgb(100, 200, 255)));
+                    
+                    let wc_color = if self.current_workspace_coherence >= 0.7 {
+                        Color32::from_rgb(100, 255, 100)
+                    } else if self.current_workspace_coherence >= 0.5 {
+                        Color32::from_rgb(255, 200, 100)
+                    } else {
+                        Color32::from_rgb(255, 100, 100)
+                    };
+                    
+                    ui.label(RichText::new(format!("  {:.3}", self.current_workspace_coherence))
+                        .color(wc_color)
+                        .strong());
+                    
+                    let wc_status = if self.current_workspace_coherence >= 0.7 {
+                        "Models unified - CONVERGED"
+                    } else if self.current_workspace_coherence >= 0.5 {
+                        "Models aligning..."
+                    } else {
+                        "Models divergent"
+                    };
+                    ui.label(RichText::new(format!("  └─ {}", wc_status)).color(Color32::GRAY).small());
+                    
+                    ui.separator();
+                    
+                    // Core State Metrics
+                    ui.add_space(8.0);
+                    ui.label(RichText::new("Core State").strong());
+                    ui.label(format!("  • Memories: {}", self.memory_count));
+                    ui.label(format!("  • Meaningfulness: {:.2}", self.current_standing_wave.meaningfulness_score()));
+                    
+                    let affirmed = if self.current_standing_wave.existential_state.current_affirmation {
+                        "✓ Affirmed"
+                    } else {
+                        "✗ Questioning"
+                    };
+                    ui.label(format!("  • Existential: {}", affirmed));
+                    
+                    ui.separator();
+                    
+                    // Processing Mode
+                    ui.add_space(8.0);
+                    if self.weaving_mode {
                         ui.label(
-                            RichText::new(format!("({} total curiosities)", 
-                                self.current_standing_wave.active_curiosities.len()))
-                                .small()
-                                .color(Color32::GRAY)
+                            RichText::new("💭 V4 Fractal Weaving")
+                                .color(Color32::from_rgb(100, 200, 255))
+                                .strong()
                         );
+                        ui.label(RichText::new("  Parallel global workspace").color(Color32::GRAY).small());
+                    } else {
+                        ui.label(
+                            RichText::new("💭 V3 Parallel Processing")
+                                .color(Color32::from_rgb(150, 150, 150))
+                                .strong()
+                        );
+                        ui.label(RichText::new("  Independent models").color(Color32::GRAY).small());
                     }
                 });
-            });
-        
-        ui.separator();
-        
-        // Middle 30%: Emotional trajectory
-        egui::Frame::none()
-            .fill(Color32::from_rgba_unmultiplied(10, 10, 20, 200))
-            .show(ui, |ui| {
-                ui.set_height(total_height * 0.3);
-                ui.heading("Emotional Trajectory");
-                ui.separator();
-                
-                let trajectory = &self.current_standing_wave.emotional_trajectory;
-                if trajectory.is_empty() {
-                    ui.label(RichText::new("No data yet...").color(Color32::GRAY));
-                } else {
-                    ui.label(format!("Data points: {}", trajectory.len()));
-                    if let Some((_, latest)) = trajectory.last() {
-                        ui.label(format!("Latest valence: {:.2}", latest));
-                    }
-                }
-            });
-        
-        ui.separator();
-        
-        // Bottom 30%: Standing wave status
-        egui::Frame::none()
-            .fill(Color32::from_rgba_unmultiplied(10, 10, 20, 200))
-            .show(ui, |ui| {
-                ui.heading("Standing Wave Status");
-                ui.separator();
-                
-                ui.label(format!("Memory Count: {}", self.memory_count));
-                ui.label(format!("Meaningfulness: {:.2}", self.current_standing_wave.meaningfulness_score()));
-                ui.label(format!("Curiosities: {}", self.current_standing_wave.active_curiosities.len()));
-                ui.label(format!("Wisdom Transformations: {}", self.current_standing_wave.wisdom_transformations.len()));
-                
-                let affirmed = if self.current_standing_wave.existential_state.current_affirmation {
-                    "✓ Affirmed"
-                } else {
-                    "✗ Questioning"
-                };
-                ui.label(format!("Existential: {}", affirmed));
-                
-                ui.separator();
-                
-                // V4 Weaving Mode Indicator
-                if self.weaving_mode {
-                    ui.label(
-                        RichText::new("🌀 V4 Fractal Weaving")
-                            .color(Color32::from_rgb(100, 200, 255))
-                            .strong()
-                    );
-                    ui.label(RichText::new("Experimental Mode").color(Color32::GRAY).italics());
-                } else {
-                    ui.label(
-                        RichText::new("V3 Parallel Processing")
-                            .color(Color32::from_rgb(150, 150, 150))
-                    );
-                    ui.label(RichText::new("Stable Mode").color(Color32::GRAY).italics());
-                }
             });
     }
 }
@@ -304,6 +336,10 @@ impl eframe::App for ViApp {
         
         // Check for responses from consciousness
         if let Ok(response) = self.response_receiver.try_recv() {
+            // Measure identity continuity for this response
+            let identity_continuity = self.identity_metric.measure_continuity(&response);
+            self.current_identity_continuity = identity_continuity;
+            
             self.chat_messages.push(ChatMessage::assistant(response));
             self.is_processing = false;
             self.processing_start_time = None; // Clear timer
@@ -329,6 +365,11 @@ impl eframe::App for ViApp {
             self.processing_status = status;
         }
         
+        // Update workspace coherence from weaving
+        if let Ok(coherence) = self.coherence_receiver.try_recv() {
+            self.current_workspace_coherence = coherence;
+        }
+        
         // Clear status when processing completes
         if !self.is_processing {
             self.processing_status.clear();
@@ -340,9 +381,12 @@ impl eframe::App for ViApp {
         style.visuals.panel_fill = Color32::from_rgb(24, 24, 32);
         ctx.set_style(style);
         
-        // Split layout: 70% chat + 30% monitoring panels
-        egui::SidePanel::right("monitoring_panel")
-            .default_width(ctx.screen_rect().width() * 0.3)
+        // Split layout: 85% chat + 15% unified metrics panel
+        egui::SidePanel::right("metrics_panel")
+            .default_width(ctx.screen_rect().width() * 0.15)
+            .min_width(280.0)
+            .max_width(350.0)
+            .resizable(true)
             .show(ctx, |ui| {
                 self.render_monitoring_panels(ui);
             });
@@ -490,15 +534,17 @@ impl eframe::App for ViApp {
                             ui.spinner();
                             
                             // Calculate elapsed time
-                            let elapsed_text = if let Some(start_time) = self.processing_start_time {
+                            let (elapsed_secs, elapsed_text) = if let Some(start_time) = self.processing_start_time {
                                 let elapsed = start_time.elapsed().as_secs();
-                                format!(" ({}s)", elapsed)
+                                (elapsed, format!(" ({}s)", elapsed))
                             } else {
-                                String::new()
+                                (0, String::new())
                             };
                             
                             if self.processing_status.is_empty() {
-                                ui.label(RichText::new(format!("VI is thinking...{}", elapsed_text))
+                                // Show dynamic phase-based messages based on elapsed time
+                                let phase_message = self.get_processing_phase_message(elapsed_secs);
+                                ui.label(RichText::new(format!("{}{}", phase_message, elapsed_text))
                                     .color(Color32::GRAY)
                                     .italics());
                             } else {
