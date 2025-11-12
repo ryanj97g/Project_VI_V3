@@ -14,6 +14,8 @@ struct OllamaRequest {
     model: String,
     prompt: String,
     stream: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    keep_alive: Option<String>, // How long to keep model in VRAM (e.g., "2m30s", "5m", "30s")
 }
 
 #[derive(Debug, Deserialize)]
@@ -219,6 +221,7 @@ impl ModelManager {
             model: model.to_string(),
             prompt: prompt.to_string(),
             stream: false,
+            keep_alive: Some(self.config.model_keep_alive.clone()), // Configurable model persistence
         };
 
         // Retry logic: 3 attempts with exponential backoff

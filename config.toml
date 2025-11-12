@@ -43,6 +43,13 @@ main_model = "gemma2:2b"          # Primary voice/response model (VI's main cons
 curiosity_model = "tinyllama:latest"  # Curiosity generation (background wonder)
 valence_model = "gemma2:2b"       # Emotional analysis (sentiment detection)
 
+# Model Persistence (how long to keep models in VRAM after use)
+# Longer = faster responses but more VRAM used when idle
+# Shorter = models unload when idle, saves VRAM but slower on next request
+# Format: "30s", "2m", "2m30s", "5m", etc.
+# Default "2m30s" covers V4 weaving (90s) + typical user response time (60s)
+model_keep_alive = "2m30s"
+
 # Conversation Logging
 enable_conversation_logging = true
 conversation_logs_folder = "./conversation_logs"

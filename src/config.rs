@@ -45,6 +45,8 @@ pub struct Config {
     pub curiosity_model: String,
     #[serde(default = "default_valence_model")]
     pub valence_model: String,
+    #[serde(default = "default_keep_alive")]
+    pub model_keep_alive: String,
 
     // Conversation Logging
     #[serde(default = "default_logging_enabled")]
@@ -93,6 +95,9 @@ fn default_curiosity_model() -> String {
 fn default_valence_model() -> String {
     "gemma2:2b".to_string()
 }
+fn default_keep_alive() -> String {
+    "2m30s".to_string() // 2.5 minutes - covers weaving + typical response time
+}
 fn default_logging_enabled() -> bool {
     true
 }
@@ -119,6 +124,7 @@ impl Default for Config {
             main_model: default_main_model(),
             curiosity_model: default_curiosity_model(),
             valence_model: default_valence_model(),
+            model_keep_alive: default_keep_alive(),
             enable_conversation_logging: default_logging_enabled(),
             conversation_logs_folder: default_logs_folder(),
         }
