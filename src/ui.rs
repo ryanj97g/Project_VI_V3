@@ -51,7 +51,7 @@ pub struct ViApp {
 
     coherence_receiver: Receiver<f32>,
 
-    // System performance monitoring (CPU-only, no GPU compute overhead)
+    // System performance monitoring (CPU-only, real-time updates every 1 second)
     ollama_status: OllamaStatus,
     performance_history: PerformanceHistory,
     performance_receiver: Receiver<OllamaStatus>,
@@ -88,14 +88,14 @@ impl ViApp {
         let weaving_mode = consciousness.get_config().enable_fractal_weaving;
         tracing::info!("UI: Initial weaving_mode = {}", weaving_mode);
 
-        // Set up Ollama performance monitoring (CPU-only, every 5 seconds)
+        // Set up Ollama performance monitoring (CPU-only, real-time 1-second polling)
         let (performance_sender, performance_receiver) = channel();
         let ollama_url = consciousness.get_config().ollama_url.clone();
         std::thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
             let monitor = OllamaMonitor::new(ollama_url);
             loop {
-                std::thread::sleep(std::time::Duration::from_secs(5)); // CPU-only polling
+                std::thread::sleep(std::time::Duration::from_secs(1)); // Real-time monitoring
                 rt.block_on(async {
                     let status = monitor.get_status().await;
                     let _ = performance_sender.send(status);
@@ -142,7 +142,7 @@ impl ViApp {
             previous_response: String::new(),
             coherence_receiver,
             ollama_status: OllamaStatus::offline(),
-            performance_history: PerformanceHistory::new(20), // Last 20 samples (100 seconds)
+            performance_history: PerformanceHistory::new(100), // Last 100 samples (100 seconds at 1s polling)
             performance_receiver,
             show_performance_panel: true, // Expanded by default
         }
@@ -824,7 +824,7 @@ impl eframe::App for ViApp {
             self.consciousness_metrics.workspace_coherence = coherence;
         }
 
-        // Update system performance metrics (CPU-only, every 5 seconds)
+        // Update system performance metrics (CPU-only, real-time 1-second updates)
         if let Ok(status) = self.performance_receiver.try_recv() {
             // Calculate average tokens/sec and GPU utilization from all models
             let avg_tokens: f32 = if !status.active_models.is_empty() {
